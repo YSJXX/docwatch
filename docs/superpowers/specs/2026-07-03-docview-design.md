@@ -44,7 +44,7 @@ tags: [design, spec, mvp]
 
 ### 스택
 
-- **Astro 4+** — 정적 사이트 생성기이자 dev 서버.
+- **Astro 5+** — 정적 사이트 생성기이자 dev 서버. (초기 초안은 Astro 4로 작성됐으나 shakedown Task 1에서 Starlight 0.30 peer 제약 확인 후 5로 정정.)
 - **Starlight** — 문서 사이드바 · 검색(pagefind) · 다크모드 등 문서 UX 기본 제공.
 - **chokidar** — 파일 워칭.
 - **Vitest** — 유닛/통합 테스트.
