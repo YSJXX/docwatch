@@ -26,3 +26,14 @@ pnpm-debug.log*
 # runtime cache
 *.log
 .cache/
+
+# Astro internals
+.astro/
+
+# Playwright artefacts
+test-results/
+playwright-report/
+blob-report/
+
+# Vitest coverage
+coverage/
