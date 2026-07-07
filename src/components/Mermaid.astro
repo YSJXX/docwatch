@@ -1,0 +1,25 @@
+<script>
+  import mermaid from 'mermaid';
+
+  mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+
+  async function renderAll() {
+    const blocks = document.querySelectorAll('pre > code.language-mermaid');
+    let i = 0;
+    for (const code of blocks) {
+      const src = code.textContent ?? '';
+      const holder = document.createElement('div');
+      holder.className = 'mermaid-rendered';
+      try {
+        const { svg } = await mermaid.render(`mm-${i++}`, src);
+        holder.innerHTML = svg;
+        code.closest('pre')?.replaceWith(holder);
+      } catch {
+        // Keep the original code block when Mermaid cannot render it.
+      }
+    }
+  }
+
+  renderAll();
+  document.addEventListener('astro:page-load', renderAll);
+</script>

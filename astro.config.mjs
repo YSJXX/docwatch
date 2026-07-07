@@ -16,11 +16,18 @@ const gitWatchIntegration = {
 
 export default defineConfig({
   site: 'http://localhost:4321',
+  markdown: {
+    syntaxHighlight: false,
+  },
   integrations: [
     gitWatchIntegration,
     starlight({
       title: 'docview',
       sidebar: [{ label: 'Docs', autogenerate: { directory: '.' } }],
+      expressiveCode: false,
+      components: {
+        Footer: './src/components/Footer.astro',
+      },
     }),
     mdx(),
   ],
