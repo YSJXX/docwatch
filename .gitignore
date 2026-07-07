@@ -37,3 +37,4 @@ blob-report/
 
 # Vitest coverage
 coverage/
+.spike/
