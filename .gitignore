@@ -38,3 +38,4 @@ blob-report/
 # Vitest coverage
 coverage/
 .spike/
+tests/fixtures/sample-repo/
