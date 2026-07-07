@@ -1,0 +1,20 @@
+---
+import { scanGitLog, type Commit } from '@/data/scan';
+import { targetRepoRoot } from '@/data/paths';
+const commits: Commit[] = await scanGitLog(targetRepoRoot(), 30).catch(() => []);
+const groups = new Map<string, Commit[]>();
+for (const c of commits) { const l = groups.get(c.relTime) ?? []; l.push(c); groups.set(c.relTime, l); }
+---
+<div>
+  {commits.length === 0 && <p style="color:#888">git 저장소가 아니거나 커밋이 없습니다.</p>}
+  {[...groups.entries()].map(([label, list]) => (
+    <div>
+      <div style="font-weight:600;margin-top:8px;">{label}</div>
+      <ul style="margin:4px 0 0 16px;padding:0;">
+        {list.map(c => (
+          <li><code>{c.sha.slice(0, 7)}</code> {c.subject}{c.files[0] && <span style="color:#888"> · {c.files[0]}</span>}</li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</div>
