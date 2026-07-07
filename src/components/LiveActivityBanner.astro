@@ -1,0 +1,28 @@
+---
+import { getActivity, type Activity } from '@/data/activity';
+import { DEFAULT_CONFIG } from '@/data/config';
+import { targetRepoRoot } from '@/data/paths';
+const initial: Activity = await getActivity(targetRepoRoot(), DEFAULT_CONFIG);
+---
+<div id="lab-root" data-initial={JSON.stringify(initial)}>
+  <div><strong>Dirty</strong><ul id="lab-dirty" style="margin:4px 0 0 16px;"></ul></div>
+  <div style="margin-top:8px;"><strong>Recently modified (5m)</strong><ul id="lab-recent" style="margin:4px 0 0 16px;"></ul></div>
+  <div id="lab-plan" style="margin-top:8px;"></div>
+</div>
+<script>
+  const root = document.getElementById('lab-root');
+  function render(d) {
+    const q = (id) => document.getElementById(id);
+    q('lab-dirty').innerHTML = (d.dirty || []).slice(0, 20)
+      .map(x => `<li><code>${x.status}</code> ${x.path}</li>`).join('') || '<li style="color:#888">clean</li>';
+    q('lab-recent').innerHTML = (d.recentlyModified || [])
+      .map(x => `<li>${x.path}</li>`).join('') || '<li style="color:#888">none</li>';
+    q('lab-plan').innerHTML = d.activePlan
+      ? `<strong>Active plan:</strong> ${d.activePlan.title} <span style="color:#888">(${d.activePlan.path})</span>`
+      : '<span style="color:#888">no active plan</span>';
+  }
+  render(JSON.parse(root?.dataset.initial || '{}'));
+  setInterval(async () => {
+    try { const r = await fetch('/api/activity.json', { cache: 'no-store' }); if (r.ok) render(await r.json()); } catch {}
+  }, 5000);
+</script>

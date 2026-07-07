@@ -2,6 +2,7 @@
 import DashboardLayout from '@/layouts/DashboardLayout.astro';
 import RecentTimeline from '@/components/RecentTimeline.astro';
 import CategoryCard from '@/components/CategoryCard.astro';
+import LiveActivityBanner from '@/components/LiveActivityBanner.astro';
 import { getCollection } from 'astro:content';
 import { aggregateByCategory } from '@/data/scan';
 import { DEFAULT_CONFIG } from '@/data/config';
@@ -23,7 +24,7 @@ const cats = aggregateByCategory(entries, DEFAULT_CONFIG.categories);
 const iconOf = (n: string) => DEFAULT_CONFIG.categories.find(c => c.name === n)?.icon;
 ---
 <DashboardLayout>
-  <section class="banner" id="live-activity"><h2>Live Activity</h2><p>(Task 12)</p></section>
+  <section class="banner" id="live-activity"><h2>Live Activity</h2><LiveActivityBanner /></section>
   <div class="grid">
     <section class="col" id="timeline"><h2>Recent commits</h2><RecentTimeline /></section>
     <section class="col" id="cards"><h2>Categories</h2>{cats.map(c => <CategoryCard {...c} icon={iconOf(c.category)} />)}</section>
