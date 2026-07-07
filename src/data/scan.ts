@@ -37,10 +37,17 @@ export type DirtyEntry = { path: string; status: 'M'|'A'|'D'|'??'|'R' };
 
 export async function scanDirtyFiles(rootDir: string): Promise<DirtyEntry[]> {
   const { stdout } = await execFile('git', ['-C', rootDir, 'status', '--porcelain', '-z'], { maxBuffer: 8 * 1024 * 1024 });
-  return stdout.split('\0').filter(Boolean).map(p => {
+  const fields = stdout.split('\0').filter(Boolean);
+  const entries: DirtyEntry[] = [];
+
+  for (let i = 0; i < fields.length; i++) {
+    const p = fields[i];
     const code = p.slice(0, 2).trim();
-    return { path: p.slice(3), status: (code[0] === '?' ? '??' : code[0]) as DirtyEntry['status'] };
-  });
+    entries.push({ path: p.slice(3), status: (code[0] === '?' ? '??' : code[0]) as DirtyEntry['status'] });
+    if (code[0] === 'R' || code[0] === 'C') i++;
+  }
+
+  return entries;
 }
 
 export type Aggregate = { category: string; docCount: number; total: number; checked: number; percent: number };
