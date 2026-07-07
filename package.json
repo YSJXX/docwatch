@@ -1,11 +1,22 @@
 {
-  "name": "docview",
+  "name": "docwatch",
   "version": "0.1.0",
   "description": "Local live doc viewer for Claude Code projects",
   "type": "module",
   "engines": {
     "node": ">=18"
   },
+  "bin": {
+    "docwatch": "./bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "public/",
+    "astro.config.mjs",
+    "tsconfig.json",
+    "docwatch.config.ts"
+  ],
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -14,7 +25,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test:unit"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.14",
