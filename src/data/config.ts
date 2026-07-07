@@ -1,0 +1,34 @@
+export type CategoryRule = { name: string; match: string | string[]; icon?: string };
+export type DocwatchConfig = { include: string[]; exclude: string[]; categories: CategoryRule[] };
+
+export const DEFAULT_CONFIG: DocwatchConfig = {
+  include: ['docs/**/*.md', 'AGENTS.md', 'README.md', 'CLAUDE.md', '.omc/**/*.md', '.claude/plans/*.md'],
+  exclude: ['**/node_modules/**', '.git/**', '.docwatch-cache/**'],
+  categories: [
+    { name: 'ADR',   match: 'docs/adr/**',                            icon: '📐' },
+    { name: 'PRD',   match: ['docs/prd*', '.omc/prd-*'],              icon: '📋' },
+    { name: 'Plans', match: '.claude/plans/**',                       icon: '🗺' },
+    { name: 'Root',  match: ['AGENTS.md', 'README.md', 'CLAUDE.md'],  icon: '📄' },
+  ],
+};
+
+export function mergeConfig(override: Partial<DocwatchConfig>): DocwatchConfig {
+  const overridden = new Set((override.categories ?? []).map(c => c.name));
+  return {
+    include: override.include ?? DEFAULT_CONFIG.include,
+    exclude: override.exclude ?? DEFAULT_CONFIG.exclude,
+    categories: [
+      ...DEFAULT_CONFIG.categories.filter(c => !overridden.has(c.name)),
+      ...(override.categories ?? []),
+    ],
+  };
+}
+
+export async function loadConfig(rootDir: string): Promise<DocwatchConfig> {
+  const path = await import('node:path');
+  const fs = await import('node:fs/promises');
+  const p = path.join(rootDir, 'docwatch.config.ts');
+  try { await fs.access(p); } catch { return DEFAULT_CONFIG; }
+  const mod = await import(/* @vite-ignore */ p);
+  return mergeConfig((mod.default ?? {}) as Partial<DocwatchConfig>);
+}

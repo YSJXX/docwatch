@@ -11,8 +11,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "test": "vitest",
-    "test:unit": "vitest run --dir tests/unit",
-    "test:integration": "vitest run --dir tests/integration",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
