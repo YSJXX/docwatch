@@ -1,5 +1,7 @@
 import { execFile as execFileCb } from 'node:child_process';
 import { promisify } from 'node:util';
+import { resolveCategory } from './categories';
+import type { CategoryRule } from './config';
 
 const execFile = promisify(execFileCb);
 
@@ -39,4 +41,20 @@ export async function scanDirtyFiles(rootDir: string): Promise<DirtyEntry[]> {
     const code = p.slice(0, 2).trim();
     return { path: p.slice(3), status: (code[0] === '?' ? '??' : code[0]) as DirtyEntry['status'] };
   });
+}
+
+export type Aggregate = { category: string; docCount: number; total: number; checked: number; percent: number };
+
+export function aggregateByCategory(
+  entries: Array<{ sourceRelPath: string; content: string }>, rules: CategoryRule[],
+): Aggregate[] {
+  const buckets = new Map<string, Aggregate>();
+  for (const e of entries) {
+    const cat = resolveCategory(e.sourceRelPath, rules);
+    const b = buckets.get(cat) ?? { category: cat, docCount: 0, total: 0, checked: 0, percent: 0 };
+    const { total, checked } = scanCheckboxes(e.content);
+    b.docCount++; b.total += total; b.checked += checked;
+    buckets.set(cat, b);
+  }
+  return [...buckets.values()].map(b => ({ ...b, percent: b.total ? (b.checked / b.total) * 100 : 0 }));
 }
