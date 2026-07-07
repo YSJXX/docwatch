@@ -1,0 +1,13 @@
+---
+const { category, docCount, checked, total, percent, icon } = Astro.props;
+---
+<div style="border:1px solid #eee;border-radius:6px;padding:10px;margin:8px 0;">
+  <div style="display:flex;justify-content:space-between;">
+    <strong>{icon ?? '📄'} {category}</strong>
+    <span style="color:#555">{Math.round(percent)}% · {docCount} docs</span>
+  </div>
+  <div style="background:#eee;height:6px;border-radius:3px;overflow:hidden;margin-top:6px;">
+    <div style={`background:#4b7;height:100%;width:${Math.round(percent)}%`}></div>
+  </div>
+  <div style="color:#888;font-size:12px;margin-top:4px;">{checked}/{total} checkboxes</div>
+</div>

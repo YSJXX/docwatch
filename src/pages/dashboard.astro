@@ -1,11 +1,31 @@
 ---
 import DashboardLayout from '@/layouts/DashboardLayout.astro';
 import RecentTimeline from '@/components/RecentTimeline.astro';
+import CategoryCard from '@/components/CategoryCard.astro';
+import { getCollection } from 'astro:content';
+import { aggregateByCategory } from '@/data/scan';
+import { DEFAULT_CONFIG } from '@/data/config';
+import { targetRepoRoot, absFromEntry } from '@/data/paths';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const root = targetRepoRoot();
+const astroRoot = path.resolve(new URL('../..', import.meta.url).pathname);
+const docs = await getCollection('docs');
+const entries = await Promise.all(docs.map(async d => {
+  const abs = absFromEntry((d as any).filePath ?? d.id + '.md', astroRoot);
+  return {
+    sourceRelPath: path.relative(root, abs).split(path.sep).join('/'),
+    content: await fs.readFile(abs, 'utf8').catch(() => ''),
+  };
+}));
+const cats = aggregateByCategory(entries, DEFAULT_CONFIG.categories);
+const iconOf = (n: string) => DEFAULT_CONFIG.categories.find(c => c.name === n)?.icon;
 ---
 <DashboardLayout>
   <section class="banner" id="live-activity"><h2>Live Activity</h2><p>(Task 12)</p></section>
   <div class="grid">
     <section class="col" id="timeline"><h2>Recent commits</h2><RecentTimeline /></section>
-    <section class="col" id="cards"><h2>Categories</h2><p>(Task 10)</p></section>
+    <section class="col" id="cards"><h2>Categories</h2>{cats.map(c => <CategoryCard {...c} icon={iconOf(c.category)} />)}</section>
   </div>
 </DashboardLayout>
