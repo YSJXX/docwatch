@@ -11,14 +11,23 @@ const initial: Activity = await getActivity(targetRepoRoot(), DEFAULT_CONFIG);
 </div>
 <script>
   const root = document.getElementById('lab-root');
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[ch]));
+  }
   function render(d) {
     const q = (id) => document.getElementById(id);
     q('lab-dirty').innerHTML = (d.dirty || []).slice(0, 20)
-      .map(x => `<li><code>${x.status}</code> ${x.path}</li>`).join('') || '<li style="color:#888">clean</li>';
+      .map(x => `<li><code>${esc(x.status)}</code> ${esc(x.path)}</li>`).join('') || '<li style="color:#888">clean</li>';
     q('lab-recent').innerHTML = (d.recentlyModified || [])
-      .map(x => `<li>${x.path}</li>`).join('') || '<li style="color:#888">none</li>';
+      .map(x => `<li>${esc(x.path)}</li>`).join('') || '<li style="color:#888">none</li>';
     q('lab-plan').innerHTML = d.activePlan
-      ? `<strong>Active plan:</strong> ${d.activePlan.title} <span style="color:#888">(${d.activePlan.path})</span>`
+      ? `<strong>Active plan:</strong> ${esc(d.activePlan.title)} <span style="color:#888">(${esc(d.activePlan.path)})</span>`
       : '<span style="color:#888">no active plan</span>';
   }
   render(JSON.parse(root?.dataset.initial || '{}'));
