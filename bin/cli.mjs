@@ -1,14 +1,35 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './cli-args.mjs';
 
-const { target, port, open } = parseArgs(process.argv.slice(2), process.cwd());
 const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const requireFromPkg = createRequire(path.join(pkgRoot, 'package.json'));
+const astroPkgPath = requireFromPkg.resolve('astro/package.json');
+const astroPkg = JSON.parse(fs.readFileSync(astroPkgPath, 'utf8'));
+const astroEntry = typeof astroPkg.bin === 'string' ? astroPkg.bin : astroPkg.bin?.astro;
+
+if (!astroEntry) {
+  console.error('[docwatch] Could not resolve bundled Astro CLI entry.');
+  process.exit(1);
+}
+
+let args;
+try {
+  args = parseArgs(process.argv.slice(2), process.cwd());
+} catch (err) {
+  console.error(`[docwatch] ${err instanceof Error ? err.message : String(err)}`);
+  process.exit(1);
+}
+
+const { target, port, open } = args;
+const astroBin = path.join(path.dirname(astroPkgPath), astroEntry);
 
 console.log(`[docwatch] watching ${target}`);
-const child = spawn('npx', ['astro', 'dev', '--root', pkgRoot, '--port', String(port)], {
+const child = spawn(process.execPath, [astroBin, 'dev', '--root', pkgRoot, '--port', String(port)], {
   env: { ...process.env, DOCWATCH_ROOT: target, ASTRO_TELEMETRY_DISABLED: '1' },
   stdio: ['ignore', 'pipe', 'inherit'],
 });

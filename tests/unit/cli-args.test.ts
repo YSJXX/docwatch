@@ -13,4 +13,12 @@ describe('parseArgs', () => {
   it('parses --port and --no-open', () => {
     expect(parseArgs(['--port', '5000', '--no-open'], '/c')).toMatchObject({ port: 5000, open: false });
   });
+
+  it.each(['abc', '-1', '0', '70000'])('rejects invalid --port value %s', (value) => {
+    expect(() => parseArgs(['--port', value], '/c')).toThrow(/Invalid --port/);
+  });
+
+  it('rejects missing --port value', () => {
+    expect(() => parseArgs(['--port'], '/c')).toThrow(/Missing value for --port/);
+  });
 });
