@@ -41,3 +41,6 @@ coverage/
 tests/fixtures/sample-repo/
 *.tgz
 .gstack/
+
+# OMC orchestration state (session/plan/notepad runtime data)
+.omc/

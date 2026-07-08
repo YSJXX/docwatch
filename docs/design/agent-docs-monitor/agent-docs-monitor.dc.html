@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens/colors.css">
+<link rel="stylesheet" href="tokens/typography.css">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden}
+  body{background:#141218}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--md-sys-color-outline-variant);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb:hover{background:var(--md-sys-color-outline)}
+  a{color:var(--md-sys-color-primary);text-decoration:none}
+  a:hover{text-decoration:underline;color:var(--md-sys-color-primary)}
+  .md-light{--md-sys-color-primary:#6750A4;--md-sys-color-on-primary:#FFFFFF;--md-sys-color-primary-container:#EADDFF;--md-sys-color-on-primary-container:#21005D;--md-sys-color-secondary:#625B71;--md-sys-color-on-secondary:#FFFFFF;--md-sys-color-secondary-container:#E8DEF8;--md-sys-color-on-secondary-container:#1D192B;--md-sys-color-tertiary:#7D5260;--md-sys-color-on-tertiary:#FFFFFF;--md-sys-color-tertiary-container:#FFD8E4;--md-sys-color-on-tertiary-container:#31111D;--md-sys-color-error:#B3261E;--md-sys-color-on-error:#FFFFFF;--md-sys-color-error-container:#F9DEDC;--md-sys-color-on-error-container:#410E0B;--md-sys-color-background:#FEF7FF;--md-sys-color-on-background:#1D1B20;--md-sys-color-surface:#FEF7FF;--md-sys-color-on-surface:#1D1B20;--md-sys-color-surface-variant:#E7E0EC;--md-sys-color-on-surface-variant:#49454F;--md-sys-color-outline:#79747E;--md-sys-color-outline-variant:#CAC4D0;--md-sys-color-inverse-surface:#322F35;--md-sys-color-inverse-on-surface:#F5EFF7;--md-sys-color-inverse-primary:#D0BCFF;--md-sys-color-surface-tint:#6750A4;--md-sys-color-surface-dim:#DED8E1;--md-sys-color-surface-bright:#FEF7FF;--md-sys-color-surface-container-lowest:#FFFFFF;--md-sys-color-surface-container-low:#F7F2FA;--md-sys-color-surface-container:#F3EDF7;--md-sys-color-surface-container-high:#ECE6F0;--md-sys-color-surface-container-highest:#E6E0E9;color-scheme:light}
+  .md-dark{--md-sys-color-primary:#D0BCFF;--md-sys-color-on-primary:#381E72;--md-sys-color-primary-container:#4F378B;--md-sys-color-on-primary-container:#EADDFF;--md-sys-color-secondary:#CCC2DC;--md-sys-color-on-secondary:#332D41;--md-sys-color-secondary-container:#4A4458;--md-sys-color-on-secondary-container:#E8DEF8;--md-sys-color-tertiary:#EFB8C8;--md-sys-color-on-tertiary:#492532;--md-sys-color-tertiary-container:#633B48;--md-sys-color-on-tertiary-container:#FFD8E4;--md-sys-color-error:#F2B8B5;--md-sys-color-on-error:#601410;--md-sys-color-error-container:#8C1D18;--md-sys-color-on-error-container:#F9DEDC;--md-sys-color-background:#141218;--md-sys-color-on-background:#E6E0E9;--md-sys-color-surface:#141218;--md-sys-color-on-surface:#E6E0E9;--md-sys-color-surface-variant:#49454F;--md-sys-color-on-surface-variant:#CAC4D0;--md-sys-color-outline:#938F99;--md-sys-color-outline-variant:#49454F;--md-sys-color-inverse-surface:#E6E0E9;--md-sys-color-inverse-on-surface:#322F35;--md-sys-color-inverse-primary:#6750A4;--md-sys-color-surface-tint:#D0BCFF;--md-sys-color-surface-dim:#141218;--md-sys-color-surface-bright:#3B383E;--md-sys-color-surface-container-lowest:#0F0D13;--md-sys-color-surface-container-low:#1D1B20;--md-sys-color-surface-container:#211F26;--md-sys-color-surface-container-high:#2B2930;--md-sys-color-surface-container-highest:#36343B;color-scheme:dark}
+  @keyframes dashPulse{0%{transform:scale(.8);opacity:.55}70%{transform:scale(2.4);opacity:0}100%{opacity:0}}
+  @keyframes dashBlink{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes dashSlideIn{from{opacity:0;transform:translateY(-14px);background:var(--md-sys-color-primary-container)}to{opacity:1;transform:translateY(0)}}
+  @keyframes dashFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes dashScan{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+</style>
+</helmet>
+<div class="{{ themeScope }}" data-theme="{{ themeName }}" style="height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--md-sys-color-background);color:var(--md-sys-color-on-surface);font-family:var(--md-sys-typescale-plain-font)">
+
+  <header style="flex:none;display:flex;align-items:center;gap:16px;padding:0 18px;height:56px;background:var(--md-sys-color-surface-container-low);border-bottom:1px solid var(--md-sys-color-outline-variant)">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--md-sys-color-primary-container);color:var(--md-sys-color-on-primary-container);font-size:16px">📁</span>
+      <div style="min-width:0">
+        <div style="font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--md-sys-color-on-surface-variant)">모니터링 중인 프로젝트</div>
+        <div style="font-family:var(--md-sys-typescale-mono-font);font-size:13px;font-weight:500;color:var(--md-sys-color-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ folderPath }}">{{ folderPath }}</div>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div style="display:flex;align-items:center;gap:7px">
+      <div title="추적 중인 전체 마크다운 파일" style="{{ statTotalStyle }}"><span style="opacity:.6;font-weight:400">파일</span><b style="font-family:var(--md-sys-typescale-mono-font)">{{ statTotal }}</b></div>
+      <div title="신규 생성된 파일 수" style="{{ statNewStyle }}"><span style="width:7px;height:7px;border-radius:999px;background:{{ statNewDot }};flex:none"></span>NEW<b style="font-family:var(--md-sys-typescale-mono-font)">{{ statNew }}</b></div>
+      <div title="수정된 파일 수" style="{{ statModStyle }}"><span style="width:7px;height:7px;border-radius:999px;background:{{ statModDot }};flex:none"></span>MOD<b style="font-family:var(--md-sys-typescale-mono-font)">{{ statMod }}</b></div>
+    </div>
+
+    <div style="width:1px;height:22px;background:var(--md-sys-color-outline-variant)"></div>
+
+    <div style="display:flex;align-items:center;gap:4px;padding:3px;border-radius:999px;background:var(--md-sys-color-surface-container-high);border:1px solid var(--md-sys-color-outline-variant)">
+      <button onClick="{{ setLight }}" title="밝은 테마" style="{{ lightBtnStyle }}">☀ 밝게</button>
+      <button onClick="{{ setDark }}" title="어두운 테마" style="{{ darkBtnStyle }}">🌙 어둡게</button>
+    </div>
+
+    <button onClick="{{ toggleLive }}" title="라이브 추적 켜기/끄기" style="{{ liveBtnStyle }}">
+      <span style="position:relative;display:inline-flex;width:9px;height:9px">
+        <span style="{{ liveDotStyle }}"></span>
+        <span style="{{ livePulseStyle }}"></span>
+      </span>
+      <span style="font-size:12.5px;font-weight:500;letter-spacing:.2px">{{ liveLabel }}</span>
+    </button>
+  </header>
+
+  <main style="flex:1;display:flex;min-height:0;overflow:hidden">
+
+    <!-- ══ COLUMN 1 ══ -->
+    <section style="{{ col1Style }}">
+      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:{{ d.secPad }};border-bottom:1px solid var(--md-sys-color-outline-variant)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">⚡</span>
+          <span style="font-size:{{ d.secTitleFs }};font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--md-sys-color-on-surface)">실시간 타임라인</span>
+        </div>
+        <span style="font-family:var(--md-sys-typescale-mono-font);font-size:11px;padding:1px 7px;border-radius:999px;background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-on-surface-variant)">{{ timelineCount }}</span>
+      </div>
+      <div style="flex:1 1 55%;min-height:0;overflow-y:auto;padding:{{ d.listPad }};display:flex;flex-direction:column;gap:{{ d.rowGap }}">
+        <sc-for list="{{ timeline }}" as="ev" hint-placeholder-count="7">
+          <div key="{{ ev.uid }}" onClick="{{ ev.onClick }}" title="{{ ev.name }}" style="{{ ev.rowStyle }}">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <span style="{{ ev.dotStyle }}"></span>
+              <span style="{{ ev.nameStyle }}">{{ ev.name }}</span>
+              <span style="{{ ev.badgeStyle }}">{{ ev.badge }}</span>
+            </div>
+            <div style="{{ ev.metaRowStyle }}">
+              <span style="font-family:var(--md-sys-typescale-mono-font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ev.dir }}</span>
+              <span style="flex:none;color:var(--md-sys-color-on-surface-variant)">{{ ev.ago }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex:none;display:flex;align-items:center;gap:8px;padding:{{ d.secPad }};border-top:1px solid var(--md-sys-color-outline-variant);border-bottom:1px solid var(--md-sys-color-outline-variant)">
+        <span style="font-size:14px">🗂️</span>
+        <span style="font-size:{{ d.secTitleFs }};font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--md-sys-color-on-surface)">프로젝트 파일 트리</span>
+      </div>
+      <div style="flex:1 1 45%;min-height:0;overflow-y:auto;padding:{{ d.listPad }}">
+        <sc-for list="{{ tree }}" as="node" hint-placeholder-count="10">
+          <div key="{{ node.key }}" onClick="{{ node.onClick }}" title="{{ node.name }}" style="{{ node.rowStyle }}">
+            <span style="{{ node.iconStyle }}">{{ node.icon }}</span>
+            <span style="{{ node.labelStyle }}">{{ node.name }}</span>
+            <span style="{{ node.badgeStyle }}">{{ node.badge }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- ══ COLUMN 2 ══ -->
+    <section style="{{ col2Style }}">
+      <div style="flex:none;padding:{{ d.secPad }};border-bottom:1px solid var(--md-sys-color-outline-variant)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="{{ col2BadgeStyle }}">{{ col2BadgeText }}</span>
+          <span style="font-family:var(--md-sys-typescale-mono-font);font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ selectedFile.name }}">{{ selectedFile.name }}</span>
+        </div>
+        <div style="font-size:11px;color:var(--md-sys-color-on-surface-variant);margin-top:3px">{{ col2Subtitle }}</div>
+      </div>
+      <div key="{{ selectedFile.id }}" style="flex:1;min-height:0;overflow-y:auto;padding:{{ d.diffPad }};animation:dashFade .28s var(--md-sys-motion-easing-standard,ease)">
+
+        <sc-if value="{{ selectedFile.isNew }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+              <div style="{{ metaChipStyle }}"><span style="color:var(--md-sys-color-on-surface-variant)">크기</span><b style="font-family:var(--md-sys-typescale-mono-font);font-weight:500">{{ selectedFile.size }}</b></div>
+              <div style="{{ metaChipStyle }}"><span style="color:var(--md-sys-color-on-surface-variant)">생성일</span><b style="font-family:var(--md-sys-typescale-mono-font);font-weight:500">{{ selectedFile.created }}</b></div>
+              <div style="{{ metaChipStyle }}"><span style="color:var(--md-sys-color-on-surface-variant)">라인</span><b style="font-family:var(--md-sys-typescale-mono-font);font-weight:500">{{ selectedFile.lines }}</b></div>
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:{{ newAccentColor }};margin-bottom:10px">✦ {{ selectedFile.summaryLabel }}</div>
+            <div style="border-left:3px solid {{ newBorderColor }};padding:2px 0 2px 14px;color:var(--md-sys-color-on-surface-variant);font-size:13.5px;line-height:1.65;white-space:pre-wrap">{{ selectedFile.summary }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ selectedFile.isMod }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;font-size:11px;font-family:var(--md-sys-typescale-mono-font)">
+              <span style="color:{{ diffAddColor }}">+{{ diffAdds }} 추가</span>
+              <span style="color:{{ diffDelColor }}">−{{ diffDels }} 삭제</span>
+              <span style="color:var(--md-sys-color-on-surface-variant)">{{ selectedFile.lastEdit }}</span>
+            </div>
+            <div style="border:1px solid var(--md-sys-color-outline-variant);border-radius:{{ d.rowRadius }};overflow:hidden;font-family:var(--md-sys-typescale-mono-font);font-size:12.5px;line-height:1.7">
+              <sc-for list="{{ diffLines }}" as="ln" hint-placeholder-count="9">
+                <div key="{{ ln.key }}" style="{{ ln.style }}"><span style="{{ ln.gutterStyle }}">{{ ln.gutter }}</span><span style="{{ ln.signStyle }}">{{ ln.sign }}</span><span style="white-space:pre-wrap;word-break:break-word">{{ ln.text }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </section>
+
+    <!-- ══ COLUMN 3 ══ -->
+    <section style="{{ col3Style }}">
+      <div style="flex:none;display:flex;align-items:center;gap:10px;padding:{{ d.secPad }};border-bottom:1px solid var(--md-sys-color-outline-variant)">
+        <span style="font-family:var(--md-sys-typescale-mono-font);font-size:12px;color:var(--md-sys-color-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0" title="{{ selectedFile.path }}">{{ selectedFile.path }}</span>
+        <button onClick="{{ copyPath }}" title="전체 경로 복사" style="{{ utilBtnStyle }}">{{ copyLabel }}</button>
+        <a href="{{ vscodeHref }}" title="VS Code에서 열기" style="{{ utilBtnStyle }}">↗ VS Code</a>
+      </div>
+      <div key="{{ selectedFile.id }}" style="flex:1;min-height:0;overflow-y:auto;animation:dashFade .3s var(--md-sys-motion-easing-standard,ease)">
+        <sc-if value="{{ selectedFile.isPlan }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:{{ d.previewPad }};max-width:760px;margin:0 auto">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--md-sys-color-primary);margin-bottom:8px">☑ 계획 추적</div>
+            <div style="font-size:22px;font-weight:700;color:var(--md-sys-color-on-surface);margin-bottom:16px">{{ planTitle }}</div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+              <div style="flex:1;height:9px;border-radius:999px;background:var(--md-sys-color-surface-container-highest);overflow:hidden">
+                <div style="{{ planBarStyle }}"></div>
+              </div>
+              <span style="flex:none;font-family:var(--md-sys-typescale-mono-font);font-size:13px;font-weight:500;color:var(--md-sys-color-on-surface)">{{ planProgressLabel }}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px">
+              <button onClick="{{ setFilterAll }}" style="{{ tabAllStyle }}">전체 {{ planCountAll }}</button>
+              <button onClick="{{ setFilterDone }}" style="{{ tabDoneStyle }}">완료 {{ planCountDone }}</button>
+              <button onClick="{{ setFilterTodo }}" style="{{ tabTodoStyle }}">예정 {{ planCountTodo }}</button>
+              <button onClick="{{ setFilterDeleted }}" style="{{ tabDelStyle }}">삭제됨 {{ planCountDeleted }}</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ planItems }}" as="it" hint-placeholder-count="6">
+                <div key="{{ it.id }}" style="{{ it.rowStyle }}">
+                  <button onClick="{{ it.onToggle }}" title="{{ it.toggleTitle }}" style="{{ it.boxStyle }}">{{ it.mark }}</button>
+                  <span style="{{ it.textStyle }}">{{ it.text }}</span>
+                  <span style="{{ it.tagStyle }}">{{ it.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ planEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:40px 20px;text-align:center;color:var(--md-sys-color-on-surface-variant);font-size:13px">해당 상태의 계획이 없습니다.</div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{ selectedFile.notPlan }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:{{ d.previewPad }};max-width:720px;margin:0 auto;color:var(--md-sys-color-on-surface);font-size:15px;line-height:1.7" dangerouslySetInnerHTML="{{ previewHtml }}"></div>
+        </sc-if>
+      </div>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1480,&quot;height&quot;:900},&quot;startTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;,&quot;section&quot;:&quot;테마&quot;},&quot;liveEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;동작&quot;},&quot;tickSeconds&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:5,&quot;min&quot;:2,&quot;max&quot;:12,&quot;step&quot;:1,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;동작&quot;}}">
+class Component extends DCLogic {
+  state = {
+    variant: 'B',
+    theme: (this.props.startTheme === 'light' ? 'light' : 'dark'),
+    live: this.props.liveEnabled !== false,
+    selectedId: 'prd',
+    copied: false,
+    files: null,
+    timeline: null,
+    tree: null,
+    tick: 0,
+    planFilter: 'all',
+  };
+
+  // ---------- lifecycle ----------
+  componentDidMount() {
+    const seed = this.seedData();
+    this.setState(seed);
+    this._eventIdx = 0;
+    this.startTimer();
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState && prevState.live !== this.state.live) this.startTimer();
+  }
+  componentWillUnmount() { clearInterval(this._timer); clearTimeout(this._copyT); }
+
+  startTimer() {
+    clearInterval(this._timer);
+    if (!this.state.live) return;
+    const secs = Math.max(2, this.props.tickSeconds || 5);
+    this._timer = setInterval(() => this.pushEvent(), secs * 1000);
+  }
+
+  // ---------- live simulation ----------
+  pushEvent() {
+    const pool = this.eventPool();
+    const ev = pool[this._eventIdx % pool.length];
+    this._eventIdx++;
+    this.setState(s => {
+      const files = { ...s.files };
+      let tree = s.tree;
+      if (ev.newFile && !files[ev.fileId]) {
+        files[ev.fileId] = ev.newFile;
+        tree = this.insertTree(s.tree, ev.newFile);
+      }
+      if (files[ev.fileId]) {
+        files[ev.fileId] = { ...files[ev.fileId], status: ev.status, ago: '방금 전', isNew: ev.status==='NEW', isMod: ev.status==='MOD' };
+      }
+      const entry = { uid: 'e' + Date.now() + '_' + this._eventIdx, fileId: ev.fileId, name: files[ev.fileId].name, dir: files[ev.fileId].dir, status: ev.status, ago: '방금 전', isNew: true, note: ev.note };
+      const timeline = [entry, ...s.timeline.map(t => ({ ...t, isNew: false, ago: this.bump(t.ago) }))].slice(0, 16);
+      return { files, tree, timeline };
+    });
+    clearTimeout(this._newT);
+    this._newT = setTimeout(() => {
+      this.setState(s => ({ timeline: s.timeline.map((t,i)=> i===0 ? {...t, isNew:false} : t) }));
+    }, 1000);
+  }
+  bump(ago){
+    const m = ago.match(/^(\d+)/);
+    if (ago === '방금 전') return '1분 전';
+    if (m) return (parseInt(m[1],10)+1) + '분 전';
+    return ago;
+  }
+  insertTree(tree, f){
+    // find index of the dir path, insert after it; fallback append under docs
+    const idx = tree.findIndex(n => n.isDir && n.path === f.dir);
+    const node = { key:'t_'+f.id, id:f.id, name:f.name.split('/').pop(), icon:'📄', isDir:false, depth: (idx>=0? tree[idx].depth+1 : 2), path:f.path };
+    if (idx>=0){
+      const out=[...tree]; out.splice(idx+1,0,node); return out;
+    }
+    return [...tree, {...node, depth:2}];
+  }
+
+  // ---------- actions ----------
+  select = (id) => this.setState({ selectedId: id });
+  toggleLive = () => this.setState(s => ({ live: !s.live }), () => this.startTimer());
+  setPlanFilter = (f) => this.setState({ planFilter: f });
+  setLight = () => this.setState({ theme: 'light' });
+  setDark = () => this.setState({ theme: 'dark' });
+  togglePlan = (fileId, itemId) => this.setState(s => {
+    const files = { ...s.files };
+    const f = files[fileId]; if (!f || !f.plan) return {};
+    files[fileId] = { ...f, plan: f.plan.map(it => it.id === itemId && it.status !== 'deleted'
+      ? { ...it, status: it.status === 'done' ? 'todo' : 'done' } : it) };
+    return { files };
+  });
+  restorePlan = (fileId, itemId) => this.setState(s => {
+    const files = { ...s.files };
+    const f = files[fileId]; if (!f || !f.plan) return {};
+    files[fileId] = { ...f, plan: f.plan.map(it => it.id === itemId ? { ...it, status: 'todo' } : it) };
+    return { files };
+  });
+  copyPath = () => {
+    const f = this.state.files[this.state.selectedId];
+    try { navigator.clipboard && navigator.clipboard.writeText(f.path); } catch(e){}
+    this.setState({ copied: true });
+    clearTimeout(this._copyT);
+    this._copyT = setTimeout(()=>this.setState({copied:false}), 1400);
+  };
+
+  // ---------- density tokens ----------
+  density() {
+    const A = {
+      col1:'22%', col2:'31%', col3:'47%',
+      secPad:'14px 16px', listPad:'12px', rowGap:'7px',
+      rowPad:'11px 12px', rowRadius:'12px', fs:'13.5px', secTitleFs:'11.5px',
+      treePad:'7px 10px', diffPad:'18px 20px', previewPad:'34px 40px',
+      cardBg:'var(--md-sys-color-surface-container-high)', cardBorder:'1px solid var(--md-sys-color-outline-variant)',
+      metaFs:'11px', shadow:'0 1px 2px rgba(0,0,0,.25)'
+    };
+    const B = {
+      col1:'23%', col2:'30%', col3:'47%',
+      secPad:'8px 12px', listPad:'6px 8px', rowGap:'1px',
+      rowPad:'5px 9px', rowRadius:'5px', fs:'12px', secTitleFs:'10.5px',
+      treePad:'3px 8px', diffPad:'10px 12px', previewPad:'20px 24px',
+      cardBg:'transparent', cardBorder:'1px solid transparent',
+      metaFs:'10px', shadow:'none'
+    };
+    return B;
+  }
+
+  // ---------- theme-aware accent palette ----------
+  palette() {
+    const light = this.state.theme === 'light';
+    return light ? {
+      green:'#1b7a44', greenDot:'#1f9d54', greenBg:'rgba(31,157,84,.16)', greenBgSoft:'rgba(31,157,84,.12)', greenBorder:'rgba(31,157,84,.45)', greenGlow:'rgba(31,157,84,.26)',
+      orange:'#8a5200', orangeDot:'#cf7a1e', orangeBg:'rgba(207,122,30,.18)', orangeBgSoft:'rgba(207,122,30,.13)', orangeBorder:'rgba(207,122,30,.5)', orangeGlow:'rgba(207,122,30,.26)',
+      red:'#b3261e', redBg:'rgba(179,38,30,.10)', addBg:'rgba(31,157,84,.13)',
+      addSign:'#1b7a44', delSign:'#b3261e'
+    } : {
+      green:'#8fe6b0', greenDot:'#4ade80', greenBg:'rgba(80,190,130,.18)', greenBgSoft:'rgba(80,190,130,.14)', greenBorder:'rgba(74,222,128,.45)', greenGlow:'rgba(74,222,128,.28)',
+      orange:'#f3c07f', orangeDot:'#f5a742', orangeBg:'rgba(240,160,70,.18)', orangeBgSoft:'rgba(240,160,70,.14)', orangeBorder:'rgba(245,167,66,.45)', orangeGlow:'rgba(245,167,66,.28)',
+      red:'#f2b8b5', redBg:'rgba(242,184,181,.12)', addBg:'rgba(80,190,130,.13)',
+      addSign:'#7fe0a6', delSign:'#f2b8b5'
+    };
+  }
+
+  // ---------- render ----------
+  renderVals() {
+    const d = this.density();
+    const pal = this.palette();
+    const files = this.state.files || {};
+    const sel = files[this.state.selectedId] || this.emptyFile();
+    const isB = this.state.variant === 'B';
+
+    // header theme buttons
+    const segBase = 'border:0;cursor:pointer;font-family:var(--md-sys-typescale-plain-font);font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;transition:all .18s';
+    const segOn = segBase + ';background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary)';
+    const segOff = segBase + ';background:transparent;color:var(--md-sys-color-on-surface-variant)';
+    const lightBtnStyle = this.state.theme==='light' ? segOn : segOff;
+    const darkBtnStyle = this.state.theme==='dark' ? segOn : segOff;
+
+    // live indicator
+    const on = this.state.live;
+    const liveBtnStyle = 'display:flex;align-items:center;gap:9px;cursor:pointer;border:1px solid '+(on?pal.greenBorder:'var(--md-sys-color-outline-variant)')+';background:'+(on?pal.greenBgSoft:'var(--md-sys-color-surface-container-high)')+';color:'+(on?pal.green:'var(--md-sys-color-on-surface-variant)')+';padding:7px 13px;border-radius:999px;transition:all .2s';
+    const liveDotStyle = 'position:absolute;inset:0;border-radius:999px;background:'+(on?pal.greenDot:'var(--md-sys-color-outline)')+(on?';animation:dashBlink 1.6s ease-in-out infinite':'');
+    const livePulseStyle = on ? 'position:absolute;inset:0;border-radius:999px;background:'+pal.greenDot+';animation:dashPulse 1.8s ease-out infinite' : 'display:none';
+    const liveLabel = on ? 'Live Tracking Active' : 'Paused';
+
+    // file-status statistics
+    const flist = Object.values(files);
+    const statTotal = flist.length;
+    const statNew = flist.filter(f => f.status === 'NEW').length;
+    const statMod = flist.filter(f => f.status === 'MOD').length;
+    const statBase = 'display:flex;align-items:center;gap:6px;font-family:var(--md-sys-typescale-plain-font);font-size:12px;font-weight:600;letter-spacing:.2px;padding:5px 11px;border-radius:999px;border:1px solid ';
+    const statTotalStyle = statBase + 'var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-on-surface)';
+    const statNewStyle = statBase + pal.greenBorder + ';background:' + pal.greenBgSoft + ';color:' + pal.green;
+    const statModStyle = statBase + pal.orangeBorder + ';background:' + pal.orangeBgSoft + ';color:' + pal.orange;
+
+    // columns
+    const colBase = 'display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--md-sys-color-surface-container-low)';
+    const col1Style = colBase + ';flex:0 0 '+d.col1+';border-right:1px solid var(--md-sys-color-outline-variant)';
+    const col2Style = colBase + ';flex:0 0 '+d.col2+';border-right:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-lowest)';
+    const col3Style = colBase + ';flex:1 1 '+d.col3+';background:var(--md-sys-color-background)';
+
+    // timeline
+    const timeline = (this.state.timeline || []).map(ev => {
+      const active = ev.fileId === this.state.selectedId;
+      const c = this.statusColor(ev.status);
+      const rowStyle = [
+        'cursor:pointer;padding:'+d.rowPad+';border-radius:'+d.rowRadius,
+        'background:'+(active?'var(--md-sys-color-primary-container)':d.cardBg),
+        'border:'+(active?'1px solid var(--md-sys-color-primary)':d.cardBorder),
+        'box-shadow:'+(active?'none':d.shadow),
+        'transition:background .15s,border-color .15s',
+        ev.isNew?'animation:dashSlideIn .55s var(--md-sys-motion-easing-emphasized,ease)':''
+      ].join(';');
+      return {
+        uid: ev.uid, name: ev.name, dir: ev.dir, ago: ev.ago,
+        badge: ev.status, onClick: () => this.select(ev.fileId),
+        rowStyle,
+        dotStyle: 'flex:none;width:8px;height:8px;border-radius:999px;background:'+c.dot+(ev.isNew?';box-shadow:0 0 0 3px '+c.glow:''),
+        nameStyle: 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--md-sys-typescale-mono-font);font-size:'+d.fs+';font-weight:500;color:'+(active?'var(--md-sys-color-on-primary-container)':'var(--md-sys-color-on-surface)'),
+        badgeStyle: 'flex:none;font-family:var(--md-sys-typescale-mono-font);font-size:9.5px;font-weight:500;letter-spacing:.4px;padding:1px 6px;border-radius:4px;background:'+c.bg+';color:'+c.fg,
+        metaRowStyle: 'display:flex;justify-content:space-between;gap:10px;margin-top:3px;font-size:'+d.metaFs+';color:var(--md-sys-color-on-surface-variant);min-width:0'
+      };
+    });
+
+    // tree
+    const tree = (this.state.tree || []).map(n => {
+      const active = !n.isDir && n.id === this.state.selectedId;
+      const f = !n.isDir ? files[n.id] : null;
+      const c = f ? this.statusColor(f.status) : null;
+      return {
+        key: n.key, name: n.name, icon: n.isDir ? '▸' : '',
+        onClick: n.isDir ? (()=>{}) : (() => this.select(n.id)),
+        rowStyle: 'display:flex;align-items:center;gap:7px;cursor:'+(n.isDir?'default':'pointer')+';padding:'+d.treePad+';padding-left:'+(8 + n.depth*15)+'px;border-radius:6px;background:'+(active?'var(--md-sys-color-primary-container)':'transparent')+';transition:background .12s;min-width:0',
+        iconStyle: 'flex:none;font-size:'+(n.isDir?'10px':'12px')+';color:var(--md-sys-color-on-surface-variant)',
+        labelStyle: 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--md-sys-typescale-mono-font);font-size:'+d.fs+';font-weight:'+(n.isDir?'700':'400')+';color:'+(n.isDir?'var(--md-sys-color-on-surface-variant)':(active?'var(--md-sys-color-on-primary-container)':'var(--md-sys-color-on-surface)')),
+        badge: (!n.isDir && f) ? f.status : '',
+        badgeStyle: (!n.isDir && f) ? ('flex:none;font-family:var(--md-sys-typescale-mono-font);font-size:9px;font-weight:500;padding:0 5px;border-radius:3px;background:'+c.bg+';color:'+c.fg) : 'display:none'
+      };
+    });
+
+    // column 2 — derive the panel branch fresh from current status + diff payload
+    const showDiff = sel.status === 'MOD' && (sel.diff || []).length > 0;
+    const selView = { ...sel, isMod: showDiff, isNew: !showDiff, summaryLabel: sel.status === 'NEW' ? '신규 생성 · 본문 요약' : '문서 요약' };
+    const sc = this.statusColor(sel.status);
+    const col2BadgeStyle = 'flex:none;font-family:var(--md-sys-typescale-mono-font);font-size:10px;font-weight:500;letter-spacing:.4px;padding:2px 7px;border-radius:5px;background:'+sc.bg+';color:'+sc.fg;
+    const col2Subtitle = showDiff ? '에이전트가 수정한 변경 사항 (Diff)' : (sel.status === 'NEW' ? '에이전트가 새로 생성한 문서입니다' : '에이전트가 수정함 · 변경 요약');
+    const metaChipStyle = 'display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:'+d.rowRadius+';background:var(--md-sys-color-surface-container-high);font-size:11px;min-width:88px';
+
+    // diff
+    const diffLines = (sel.diff || []).map((l,i) => {
+      const map = {
+        add: { bg:pal.addBg, sign:'+', signColor:pal.addSign, gutter:'var(--md-sys-color-on-surface-variant)' },
+        del: { bg:pal.redBg, sign:'-', signColor:pal.delSign, gutter:'var(--md-sys-color-on-surface-variant)' },
+        ctx:{ bg:'transparent', sign:' ', signColor:'var(--md-sys-color-on-surface-variant)', gutter:'var(--md-sys-color-on-surface-variant)' }
+      };
+      const m = map[l.t] || map.ctx;
+      return {
+        key:'d'+i, text:l.s, sign:m.sign, gutter:String(i+1).padStart(2,' '),
+        style:'display:flex;background:'+m.bg,
+        gutterStyle:'flex:none;width:34px;text-align:right;padding:1px 8px 1px 0;color:'+m.gutter+';opacity:.6;user-select:none;border-right:1px solid var(--md-sys-color-outline-variant)',
+        signStyle:'flex:none;width:20px;text-align:center;color:'+m.signColor+';font-weight:500'
+      };
+    });
+    const diffAdds = (sel.diff||[]).filter(l=>l.t==='add').length;
+    const diffDels = (sel.diff||[]).filter(l=>l.t==='del').length;
+
+    // column 3 utils
+    const utilBtnStyle = 'display:inline-flex;align-items:center;gap:5px;cursor:pointer;border:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-on-surface-variant);font-family:var(--md-sys-typescale-plain-font);font-size:11.5px;font-weight:500;padding:5px 11px;border-radius:999px;white-space:nowrap;transition:all .15s;text-decoration:none';
+
+    // ---- plan tracker ----
+    const isPlan = Array.isArray(sel.plan);
+    selView.isPlan = isPlan;
+    selView.notPlan = !isPlan;
+    const allPlan = isPlan ? sel.plan : [];
+    const pfilter = this.state.planFilter;
+    const planCountDone = allPlan.filter(p => p.status === 'done').length;
+    const planCountTodo = allPlan.filter(p => p.status === 'todo').length;
+    const planCountDeleted = allPlan.filter(p => p.status === 'deleted').length;
+    const planCountAll = planCountDone + planCountTodo;
+    const activeTotal = planCountAll || 1;
+    const pct = Math.round((planCountDone / activeTotal) * 100);
+    const planTitle = (sel.body || '').split('\n')[0].replace(/^#\s+/, '') || sel.name;
+    const planProgressLabel = planCountDone + ' / ' + planCountAll + ' 완료 · ' + pct + '%';
+    const planBarStyle = 'height:100%;width:' + pct + '%;background:var(--md-sys-color-primary);border-radius:999px;transition:width .4s var(--md-sys-motion-easing-emphasized,ease)';
+    const visible = allPlan.filter(p => pfilter === 'all' ? p.status !== 'deleted' : p.status === pfilter);
+    const planEmpty = isPlan && visible.length === 0;
+    const tabBase = 'cursor:pointer;border:1px solid var(--md-sys-color-outline-variant);font-family:var(--md-sys-typescale-plain-font);font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;transition:all .15s';
+    const tab = (key) => pfilter === key
+      ? tabBase + ';background:var(--md-sys-color-secondary-container);border-color:var(--md-sys-color-secondary-container);color:var(--md-sys-color-on-secondary-container)'
+      : tabBase + ';background:transparent;color:var(--md-sys-color-on-surface-variant)';
+    const planItems = visible.map(p => {
+      const del = p.status === 'deleted';
+      const done = p.status === 'done';
+      return {
+        id: p.id, text: p.text,
+        onToggle: del ? (() => this.restorePlan(sel.id, p.id)) : (() => this.togglePlan(sel.id, p.id)),
+        toggleTitle: del ? '계획 복원' : (done ? '미완료로 표시' : '완료로 표시'),
+        mark: del ? '↺' : (done ? '✓' : ''),
+        rowStyle: 'display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;background:' + (del ? 'transparent' : 'var(--md-sys-color-surface-container)') + ';border:1px solid ' + (del ? 'var(--md-sys-color-outline-variant)' : 'transparent') + (del ? ';border-style:dashed' : ''),
+        boxStyle: 'flex:none;width:22px;height:22px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:all .15s;'
+          + (done ? 'background:var(--md-sys-color-primary);border:2px solid var(--md-sys-color-primary);color:var(--md-sys-color-on-primary)'
+            : del ? 'background:transparent;border:2px solid var(--md-sys-color-outline);color:var(--md-sys-color-on-surface-variant)'
+            : 'background:transparent;border:2px solid var(--md-sys-color-outline);color:transparent'),
+        textStyle: 'flex:1;min-width:0;font-size:14px;line-height:1.4;'
+          + (del ? 'text-decoration:line-through;color:var(--md-sys-color-on-surface-variant);opacity:.7'
+            : done ? 'color:var(--md-sys-color-on-surface-variant)' : 'color:var(--md-sys-color-on-surface)'),
+        tag: del ? '삭제됨' : (done ? '완료' : '예정'),
+        tagStyle: 'flex:none;font-family:var(--md-sys-typescale-mono-font);font-size:9.5px;font-weight:500;letter-spacing:.4px;padding:2px 7px;border-radius:5px;'
+          + (del ? 'background:'+pal.redBg+';color:'+pal.red
+            : done ? 'background:'+pal.greenBgSoft+';color:'+pal.green : 'background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-on-surface-variant)')
+      };
+    });
+
+    return {
+      folderPath: '~/dev/nova-commerce',
+      d, isB,
+      themeClass: this.state.theme === 'dark' ? 'dark' : '', themeName: this.state.theme,
+      themeScope: this.state.theme === 'light' ? 'md-light' : 'md-dark',
+      lightBtnStyle, darkBtnStyle, setLight: this.setLight, setDark: this.setDark,
+      newAccentColor: pal.green, newBorderColor: pal.greenBorder, diffAddColor: pal.addSign, diffDelColor: pal.delSign,
+      statNewDot: pal.greenDot, statModDot: pal.orangeDot,
+      liveBtnStyle, liveDotStyle, livePulseStyle, liveLabel, toggleLive:this.toggleLive,
+      statTotal, statNew, statMod, statTotalStyle, statNewStyle, statModStyle,
+      col1Style, col2Style, col3Style,
+      timeline, timelineCount: (this.state.timeline||[]).length,
+      tree,
+      selectedFile: selView,
+      col2BadgeStyle, col2BadgeText: sel.status, col2Subtitle, metaChipStyle,
+      diffLines, diffAdds, diffDels,
+      previewHtml: { __html: this.mdToHtml(sel.body || '') },
+      planItems, planEmpty, planTitle, planProgressLabel, planBarStyle,
+      planCountAll, planCountDone, planCountTodo, planCountDeleted,
+      tabAllStyle: tab('all'), tabDoneStyle: tab('done'), tabTodoStyle: tab('todo'), tabDelStyle: tab('deleted'),
+      setFilterAll: () => this.setPlanFilter('all'), setFilterDone: () => this.setPlanFilter('done'),
+      setFilterTodo: () => this.setPlanFilter('todo'), setFilterDeleted: () => this.setPlanFilter('deleted'),
+      vscodeHref: 'vscode://file/' + (sel.path || ''),
+      copyPath: this.copyPath, copyLabel: this.state.copied ? '✓ 복사됨' : '⧉ 경로 복사',
+      utilBtnStyle
+    };
+  }
+
+  statusColor(s){
+    const p = this.palette();
+    if (s==='NEW') return { dot:p.greenDot, glow:p.greenGlow, bg:p.greenBg, fg:p.green };
+    if (s==='MOD') return { dot:p.orangeDot, glow:p.orangeGlow, bg:p.orangeBg, fg:p.orange };
+    return { dot:'var(--md-sys-color-outline)', glow:'transparent', bg:'var(--md-sys-color-surface-container-highest)', fg:'var(--md-sys-color-on-surface-variant)' };
+  }
+  emptyFile(){ return { id:'', name:'—', path:'', dir:'', status:'', body:'', diff:[], summary:'', size:'', created:'', lines:'', isNew:false, isMod:false }; }
+
+  // ---------- markdown → inline-styled html ----------
+  mdToHtml(md){
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const codeS='background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-primary);font-family:var(--md-sys-typescale-mono-font);font-size:.86em;padding:2px 6px;border-radius:5px';
+    const inline = t => {
+      let x = esc(t);
+      x = x.replace(/`([^`]+)`/g, (_,c)=>'<code style="'+codeS+'">'+c+'</code>');
+      x = x.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight:700;color:var(--md-sys-color-on-surface)">$1</strong>');
+      x = x.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      x = x.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--md-sys-color-primary);text-decoration:none">$1</a>');
+      return x;
+    };
+    const lines = md.split('\n');
+    let html = '', i = 0;
+    const flushList = (items, ordered) => {
+      const tag = ordered ? 'ol':'ul';
+      const hasCheck = !ordered && items.some(it => /^\[( |x|X)\]\s+/.test(it));
+      if (hasCheck) {
+        return '<ul style="margin:10px 0;padding-left:0;list-style:none">' + items.map(it => {
+          const m = it.match(/^\[( |x|X)\]\s+(.*)$/);
+          if (!m) return '<li style="margin:6px 0;padding-left:26px;color:var(--md-sys-color-on-surface-variant)">'+inline(it)+'</li>';
+          const done = m[1].toLowerCase() === 'x';
+          const box = '<span style="flex:none;margin-top:1px;width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid '+(done?'var(--md-sys-color-primary)':'var(--md-sys-color-outline)')+';background:'+(done?'var(--md-sys-color-primary)':'transparent')+';color:'+(done?'var(--md-sys-color-on-primary)':'transparent')+'">'+(done?'✓':'')+'</span>';
+          const txt = '<span style="'+(done?'color:var(--md-sys-color-on-surface-variant)':'color:var(--md-sys-color-on-surface)')+'">'+inline(m[2])+'</span>';
+          return '<li style="margin:7px 0;display:flex;align-items:flex-start;gap:10px;line-height:1.5">'+box+txt+'</li>';
+        }).join('') + '</ul>';
+      }
+      return '<'+tag+' style="margin:10px 0;padding-left:24px;line-height:1.7;color:var(--md-sys-color-on-surface-variant)">'+items.map(it=>'<li style="margin:4px 0">'+inline(it)+'</li>').join('')+'</'+tag+'>';
+    };
+    while (i < lines.length){
+      let ln = lines[i];
+      if (/^```/.test(ln)){
+        i++; const buf=[];
+        while(i<lines.length && !/^```/.test(lines[i])){ buf.push(lines[i]); i++; }
+        i++;
+        html += '<pre style="background:var(--md-sys-color-surface-container);border:1px solid var(--md-sys-color-outline-variant);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:12px 0"><code style="font-family:var(--md-sys-typescale-mono-font);font-size:13px;line-height:1.6;color:var(--md-sys-color-on-surface);white-space:pre">'+esc(buf.join('\n'))+'</code></pre>';
+        continue;
+      }
+      if (/^###\s+/.test(ln)){ html+='<h3 style="font-size:1.05em;font-weight:700;margin:20px 0 8px;color:var(--md-sys-color-on-surface)">'+inline(ln.replace(/^###\s+/,''))+'</h3>'; i++; continue; }
+      if (/^##\s+/.test(ln)){ html+='<h2 style="font-size:1.3em;font-weight:700;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--md-sys-color-outline-variant);color:var(--md-sys-color-on-surface)">'+inline(ln.replace(/^##\s+/,''))+'</h2>'; i++; continue; }
+      if (/^#\s+/.test(ln)){ html+='<h1 style="font-size:1.7em;font-weight:700;margin:6px 0 14px;color:var(--md-sys-color-on-surface);letter-spacing:-.5px">'+inline(ln.replace(/^#\s+/,''))+'</h1>'; i++; continue; }
+      if (/^(---|\*\*\*|___)\s*$/.test(ln)){ html+='<hr style="border:0;border-top:1px solid var(--md-sys-color-outline-variant);margin:22px 0">'; i++; continue; }
+      if (/^>\s?/.test(ln)){
+        const buf=[]; while(i<lines.length && /^>\s?/.test(lines[i])){ buf.push(lines[i].replace(/^>\s?/,'')); i++; }
+        html+='<blockquote style="border-left:3px solid var(--md-sys-color-primary);margin:14px 0;padding:6px 0 6px 16px;color:var(--md-sys-color-on-surface-variant);font-style:italic">'+inline(buf.join(' '))+'</blockquote>';
+        continue;
+      }
+      if (/^\|.*\|/.test(ln) && i+1<lines.length && /^\|[\s:|-]+\|/.test(lines[i+1])){
+        const rows=[]; while(i<lines.length && /^\|.*\|/.test(lines[i])){ rows.push(lines[i]); i++; }
+        const cells = r => r.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+        const head = cells(rows[0]); const body = rows.slice(2).map(cells);
+        html+='<table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:.92em"><thead><tr>'+head.map(h=>'<th style="text-align:left;padding:8px 12px;border-bottom:2px solid var(--md-sys-color-outline-variant);color:var(--md-sys-color-on-surface);font-weight:700">'+inline(h)+'</th>').join('')+'</tr></thead><tbody>'+body.map(r=>'<tr>'+r.map(c=>'<td style="padding:7px 12px;border-bottom:1px solid var(--md-sys-color-outline-variant);color:var(--md-sys-color-on-surface-variant)">'+inline(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+        continue;
+      }
+      if (/^[-*]\s+/.test(ln)){
+        const buf=[]; while(i<lines.length && /^[-*]\s+/.test(lines[i])){ buf.push(lines[i].replace(/^[-*]\s+/,'')); i++; }
+        html+=flushList(buf,false); continue;
+      }
+      if (/^\d+\.\s+/.test(ln)){
+        const buf=[]; while(i<lines.length && /^\d+\.\s+/.test(lines[i])){ buf.push(lines[i].replace(/^\d+\.\s+/,'')); i++; }
+        html+=flushList(buf,true); continue;
+      }
+      if (/^\s*$/.test(ln)){ i++; continue; }
+      const buf=[ln]; i++;
+      while(i<lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,3}\s|[-*]\s|\d+\.\s|>|\||```|---)/.test(lines[i])){ buf.push(lines[i]); i++; }
+      html+='<p style="margin:10px 0;line-height:1.72;color:var(--md-sys-color-on-surface-variant)">'+inline(buf.join(' '))+'</p>';
+    }
+    return html;
+  }
+
+  // ---------- seed data ----------
+  seedData(){
+    const F = {};
+    const mk = (o) => { F[o.id] = { diff:[], summary:'', lines:'', size:'', created:'', ...o, isNew:o.status==='NEW', isMod:o.status==='MOD' }; };
+
+    mk({ id:'prd', name:'PRD.md', dir:'docs/', path:'/dev/nova-commerce/docs/PRD.md', status:'MOD', size:'4.2 KB', created:'07-06 09:12', lines:'86', lastEdit:'방금 전 수정',
+      body:["# PRD — Nova Commerce","","> AI 에이전트가 생성·관리하는 제품 요구사항 문서입니다.","","## 1. 개요","헤드리스 커머스 플랫폼 **Nova**의 체크아웃 리디자인 요구사항을 정의한다. 목표는 결제 흐름 단순화와 이탈률 감소다.","","## 2. 목표","- 체크아웃 이탈률 `18%` → `10%` 로 감소","- 결제 수단 3종 추가 (Apple Pay, 토스, 카카오페이)","- 게스트 체크아웃 지원","","## 3. 성공 지표","| 지표 | 현재 | 목표 |","| --- | --- | --- |","| 전환율 | 2.4% | 3.1% |","| 평균 결제 시간 | 96s | 60s |","| 오류율 | 1.2% | 0.4% |","","## 4. 범위 밖","- 구독 결제 (다음 분기)","- 다국가 통화 정산","","## 5. 참고","[API 스펙](docs/api/api-spec.md) · [아키텍처](docs/architecture.md)"].join('\n'),
+      diff:[
+        {t:'ctx',s:'## 3. 성공 지표'},
+        {t:'ctx',s:'| 지표 | 현재 | 목표 |'},
+        {t:'ctx',s:'| --- | --- | --- |'},
+        {t:'del',s:'| 전환율 | 2.4% | 2.8% |'},
+        {t:'add',s:'| 전환율 | 2.4% | 3.1% |'},
+        {t:'ctx',s:'| 평균 결제 시간 | 96s | 60s |'},
+        {t:'add',s:'| 오류율 | 1.2% | 0.4% |'},
+        {t:'ctx',s:''},
+        {t:'del',s:'## 4. 향후 계획'},
+        {t:'add',s:'## 4. 범위 밖'},
+      ] });
+
+    mk({ id:'api', name:'api-spec.md', dir:'docs/api/', path:'/dev/nova-commerce/docs/api/api-spec.md', status:'MOD', size:'3.1 KB', created:'07-06 10:03', lines:'64', lastEdit:'2분 전 수정',
+      body:["# API 스펙","","베이스 URL: `https://api.nova.dev/v1`","","## 인증","모든 요청은 `Authorization: Bearer <token>` 헤더가 필요하다.","","## 엔드포인트","| 메서드 | 경로 | 설명 |","| --- | --- | --- |","| GET | /cart | 장바구니 조회 |","| POST | /cart/items | 항목 추가 |","| POST | /checkout | 체크아웃 시작 |","| POST | /auth/refresh | 토큰 갱신 |","","## 요청 예시","```","POST /checkout","{","  \"cartId\": \"c_82hf\",","  \"method\": \"tosspay\"","}","```","","성공 응답: `201 Created`"].join('\n'),
+      diff:[
+        {t:'ctx',s:'| POST | /cart/items | 항목 추가 |'},
+        {t:'ctx',s:'| POST | /checkout | 체크아웃 시작 |'},
+        {t:'add',s:'| POST | /auth/refresh | 토큰 갱신 |'},
+        {t:'ctx',s:''},
+        {t:'del',s:'method: card'},
+        {t:'add',s:'method: tosspay'},
+      ] });
+
+    mk({ id:'arch', name:'architecture.md', dir:'docs/', path:'/dev/nova-commerce/docs/architecture.md', status:'NEW', size:'2.6 KB', created:'07-09 08:41', lines:'52',
+      summary:'Nova 시스템을 "모듈형 모놀리스"로 정의하고 Gateway · Catalog · Checkout · Ledger 4개 도메인으로 분해한다. 데이터 흐름과 캐싱 전략(상품 목록 CDN 60s, 세션 Redis 30m)을 다룬다. 아직 리뷰가 필요한 초안 상태.',
+      body:["# 아키텍처 개요","","## 시스템 구성","Nova는 **모듈형 모놀리스**로 시작해 트래픽 증가 시 도메인별 서비스로 분리한다.","","- **Gateway** — 인증, 라우팅, 레이트 리밋","- **Catalog** — 상품/재고 관리","- **Checkout** — 장바구니/결제","- **Ledger** — 주문/정산","","## 데이터 흐름","```","Client → Gateway → Checkout → Ledger","                       ↓","                    Payments","```","","## 캐싱 전략","- 상품 목록: CDN edge cache `60s`","- 세션: Redis `TTL 30m`","","> 신규 문서 — 팀 리뷰 필요"].join('\n') });
+
+    mk({ id:'db', name:'database-schema.md', dir:'docs/', path:'/dev/nova-commerce/docs/database-schema.md', status:'MOD', size:'5.0 KB', created:'07-05 14:20', lines:'108', lastEdit:'11분 전 수정',
+      body:["# 데이터베이스 스키마","","## orders","| 컬럼 | 타입 | 비고 |","| --- | --- | --- |","| id | uuid | PK |","| user_id | uuid | FK |","| status | enum | pending/paid/shipped |","| total | int | 원 단위 |","","## 인덱스","- `idx_orders_user` on `user_id`","- `idx_orders_status` on `status`"].join('\n'),
+      diff:[
+        {t:'ctx',s:'## 인덱스'},
+        {t:'ctx',s:'- idx_orders_user on user_id'},
+        {t:'add',s:'- idx_orders_status on status'},
+      ] });
+
+    mk({ id:'auth', name:'auth-flow.md', dir:'docs/api/', path:'/dev/nova-commerce/docs/api/auth-flow.md', status:'NEW', size:'1.9 KB', created:'07-09 08:22', lines:'38',
+      summary:'OAuth2 + 리프레시 토큰 기반 인증 흐름을 정리. 액세스 토큰 15분 만료, 리프레시 토큰 14일. 로그인 → 토큰 발급 → 갱신 → 로그아웃 시퀀스를 다룬다.',
+      body:["# 인증 흐름","","## 개요","OAuth2 + 리프레시 토큰 방식.","","- 액세스 토큰: `15m` 만료","- 리프레시 토큰: `14d` 만료","","## 시퀀스","```","로그인 → 토큰 발급 → API 호출","         ↑            ↓ (만료)","      갱신  ←  /auth/refresh","```"].join('\n') });
+
+    mk({ id:'readme', name:'README.md', dir:'', path:'/dev/nova-commerce/README.md', status:'MOD', size:'1.4 KB', created:'07-04 11:00', lines:'30', lastEdit:'25분 전 수정',
+      body:["# Nova Commerce","","헤드리스 커머스 플랫폼.","","## 실행","```","pnpm install","pnpm dev","```","","## 문서","- [PRD](docs/PRD.md)","- [아키텍처](docs/architecture.md)"].join('\n'),
+      diff:[
+        {t:'ctx',s:'## 실행'},
+        {t:'del',s:'npm install'},
+        {t:'add',s:'pnpm install'},
+        {t:'add',s:'pnpm dev'},
+      ] });
+
+    mk({ id:'btn', name:'Button.md', dir:'docs/components/', path:'/dev/nova-commerce/docs/components/Button.md', status:'NEW', size:'1.1 KB', created:'07-09 07:58', lines:'26',
+      summary:'Button 컴포넌트 명세. variant(primary/tonal/text), size(sm/md/lg), disabled/loading 상태를 지원. 접근성 지침(최소 44px 히트 영역) 포함.',
+      body:["# Button","","재사용 가능한 버튼 컴포넌트.","","## Props","| 이름 | 타입 | 기본 |","| --- | --- | --- |","| variant | primary·tonal·text | primary |","| size | sm·md·lg | md |","| disabled | boolean | false |","","> 최소 히트 영역 `44px` 유지"].join('\n') });
+
+    mk({ id:'deploy', name:'deployment.md', dir:'docs/', path:'/dev/nova-commerce/docs/deployment.md', status:'NEW', size:'2.0 KB', created:'07-09 07:30', lines:'44',
+      summary:'배포 파이프라인 문서. GitHub Actions → 빌드 → 스테이징 → 프로덕션 프로모션. 롤백 절차와 헬스체크 엔드포인트를 정의.',
+      body:["# 배포","","## 파이프라인","```","push → CI → build → staging → prod","```","","## 롤백","- `deploy revert <tag>`","- 헬스체크: `GET /healthz`"].join('\n') });
+
+    mk({ id:'roadmap', name:'roadmap.md', dir:'docs/', path:'/dev/nova-commerce/docs/roadmap.md', status:'MOD', size:'2.8 KB', created:'07-06 09:40', lines:'58', lastEdit:'방금 전 수정',
+      plan:[
+        { id:'p1', text:'체크아웃 API 스펙 확정', status:'done' },
+        { id:'p2', text:'결제 수단 3종 연동 (Apple Pay · 토스 · 카카오)', status:'done' },
+        { id:'p3', text:'게스트 체크아웃 플로우 설계', status:'done' },
+        { id:'p4', text:'장바구니 상태 관리 리팩터링', status:'todo' },
+        { id:'p5', text:'주소 자동완성 통합', status:'todo' },
+        { id:'p6', text:'배포 파이프라인 스테이징 검증', status:'todo' },
+        { id:'p7', text:'A/B 테스트 프레임워크 도입', status:'deleted' },
+        { id:'p8', text:'다국가 통화 정산 (범위 밖으로 이동)', status:'deleted' },
+      ],
+      body:["# 로드맵 — 체크아웃 리디자인","","> 에이전트가 관리하는 계획 추적 문서. 완료·예정·삭제된 항목을 함께 다룬다.","","## 스프린트 체크리스트","- [x] 체크아웃 API 스펙 확정","- [x] 결제 수단 3종 연동 (Apple Pay · 토스 · 카카오)","- [x] 게스트 체크아웃 플로우 설계","- [ ] 장바구니 상태 관리 리팩터링","- [ ] 주소 자동완성 통합","- [ ] 배포 파이프라인 스테이징 검증"].join('\n'),
+      diff:[
+        {t:'ctx',s:'## 스프린트 체크리스트'},
+        {t:'ctx',s:'- [x] 게스트 체크아웃 플로우 설계'},
+        {t:'add',s:'- [ ] 배포 파이프라인 스테이징 검증'},
+        {t:'del',s:'- [ ] A/B 테스트 프레임워크 도입'},
+      ] });
+
+    const timeline = [
+      { uid:'s1', fileId:'prd', name:'PRD.md', dir:'docs/', status:'MOD', ago:'방금 전', isNew:false },
+      { uid:'s2', fileId:'api', name:'api-spec.md', dir:'docs/api/', status:'MOD', ago:'2분 전', isNew:false },
+      { uid:'s3', fileId:'arch', name:'architecture.md', dir:'docs/', status:'NEW', ago:'6분 전', isNew:false },
+      { uid:'s4', fileId:'db', name:'database-schema.md', dir:'docs/', status:'MOD', ago:'11분 전', isNew:false },
+      { uid:'s5', fileId:'auth', name:'auth-flow.md', dir:'docs/api/', status:'NEW', ago:'18분 전', isNew:false },
+      { uid:'s6', fileId:'readme', name:'README.md', dir:'', status:'MOD', ago:'25분 전', isNew:false },
+      { uid:'s7', fileId:'btn', name:'Button.md', dir:'docs/components/', status:'NEW', ago:'34분 전', isNew:false },
+      { uid:'s8', fileId:'deploy', name:'deployment.md', dir:'docs/', status:'NEW', ago:'41분 전', isNew:false },
+      { uid:'s0', fileId:'roadmap', name:'roadmap.md', dir:'docs/', status:'MOD', ago:'3분 전', isNew:false },
+    ];
+
+    const tree = [
+      { key:'r', isDir:false, id:'readme', name:'README.md', depth:0 },
+      { key:'d_docs', isDir:true, name:'docs', depth:0, path:'docs/' },
+      { key:'f_prd', isDir:false, id:'prd', name:'PRD.md', depth:1 },
+      { key:'f_roadmap', isDir:false, id:'roadmap', name:'roadmap.md', depth:1 },
+      { key:'f_arch', isDir:false, id:'arch', name:'architecture.md', depth:1 },
+      { key:'f_db', isDir:false, id:'db', name:'database-schema.md', depth:1 },
+      { key:'f_deploy', isDir:false, id:'deploy', name:'deployment.md', depth:1 },
+      { key:'d_api', isDir:true, name:'api', depth:1, path:'docs/api/' },
+      { key:'f_api', isDir:false, id:'api', name:'api-spec.md', depth:2 },
+      { key:'f_auth', isDir:false, id:'auth', name:'auth-flow.md', depth:2 },
+      { key:'d_comp', isDir:true, name:'components', depth:1, path:'docs/components/' },
+      { key:'f_btn', isDir:false, id:'btn', name:'Button.md', depth:2 },
+    ];
+
+    return { files:F, timeline, tree };
+  }
+
+  eventPool(){
+    return [
+      { fileId:'arch', status:'MOD', note:'캐싱 전략 섹션 추가' },
+      { fileId:'errh', status:'NEW', note:'error-handling.md 생성', newFile:{ id:'errh', name:'error-handling.md', dir:'docs/', path:'/dev/nova-commerce/docs/error-handling.md', status:'NEW', size:'1.3 KB', created:'방금', lines:'28', isNew:true, isMod:false, diff:[], summary:'전역 에러 처리 전략. 4xx/5xx 분류, 재시도 정책, 사용자 노출 메시지 규칙을 정의.', body:["# 에러 처리","","## 분류","- 4xx: 클라이언트 검증","- 5xx: 서버/재시도","","## 재시도","- 지수 백오프 `2^n`, 최대 3회"].join('\n') } },
+      { fileId:'api', status:'MOD', note:'POST /auth/refresh 문서화' },
+      { fileId:'prd', status:'MOD', note:'성공 지표 업데이트' },
+      { fileId:'test', status:'NEW', note:'test-plan.md 생성', newFile:{ id:'test', name:'test-plan.md', dir:'docs/', path:'/dev/nova-commerce/docs/test-plan.md', status:'NEW', size:'1.6 KB', created:'방금', lines:'34', isNew:true, isMod:false, diff:[], summary:'테스트 전략. 단위(Vitest) · 통합 · E2E(Playwright) 3계층. 커버리지 목표 80%.', body:["# 테스트 계획","","## 계층","- 단위: `Vitest`","- E2E: `Playwright`","","## 목표","- 커버리지 `80%`"].join('\n') } },
+      { fileId:'db', status:'MOD', note:'payments 테이블 인덱스 추가' },
+      { fileId:'modal', status:'NEW', note:'Modal.md 생성', newFile:{ id:'modal', name:'Modal.md', dir:'docs/components/', path:'/dev/nova-commerce/docs/components/Modal.md', status:'NEW', size:'0.9 KB', created:'방금', lines:'22', isNew:true, isMod:false, diff:[], summary:'Modal 컴포넌트. 포커스 트랩, ESC 닫기, 스크림 클릭 닫기를 지원. size 3종.', body:["# Modal","","접근성을 갖춘 모달.","","- 포커스 트랩","- `ESC` 로 닫기","- 스크림 클릭 닫기"].join('\n') } },
+    ];
+  }
+}
+</script>
+</body>
+</html>

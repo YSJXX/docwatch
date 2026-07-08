@@ -1,0 +1,263 @@
+---
+const { title = 'Agent Docs Monitor', repoPath, docsTotal, newCount, modCount } = Astro.props;
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style is:global>
+      :root {
+        --md-sys-color-primary:#6750A4;--md-sys-color-on-primary:#FFFFFF;--md-sys-color-primary-container:#EADDFF;--md-sys-color-on-primary-container:#21005D;--md-sys-color-secondary:#625B71;--md-sys-color-on-secondary:#FFFFFF;--md-sys-color-secondary-container:#E8DEF8;--md-sys-color-on-secondary-container:#1D192B;--md-sys-color-tertiary:#7D5260;--md-sys-color-on-tertiary:#FFFFFF;--md-sys-color-tertiary-container:#FFD8E4;--md-sys-color-on-tertiary-container:#31111D;--md-sys-color-error:#B3261E;--md-sys-color-on-error:#FFFFFF;--md-sys-color-error-container:#F9DEDC;--md-sys-color-on-error-container:#410E0B;--md-sys-color-background:#FEF7FF;--md-sys-color-on-background:#1D1B20;--md-sys-color-surface:#FEF7FF;--md-sys-color-on-surface:#1D1B20;--md-sys-color-surface-variant:#E7E0EC;--md-sys-color-on-surface-variant:#49454F;--md-sys-color-outline:#79747E;--md-sys-color-outline-variant:#CAC4D0;--md-sys-color-inverse-surface:#322F35;--md-sys-color-inverse-on-surface:#F5EFF7;--md-sys-color-inverse-primary:#D0BCFF;--md-sys-color-surface-tint:#6750A4;--md-sys-color-surface-dim:#DED8E1;--md-sys-color-surface-bright:#FEF7FF;--md-sys-color-surface-container-lowest:#FFFFFF;--md-sys-color-surface-container-low:#F7F2FA;--md-sys-color-surface-container:#F3EDF7;--md-sys-color-surface-container-high:#ECE6F0;--md-sys-color-surface-container-highest:#E6E0E9;color-scheme:light;
+        --md-sys-typescale-plain-font: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --md-sys-typescale-mono-font: "Roboto Mono", ui-monospace, "SF Mono", Consolas, monospace;
+        --dw-green:#1b7a44;--dw-green-dot:#1f9d54;--dw-green-bg:rgba(31,157,84,.12);--dw-green-border:rgba(31,157,84,.45);--dw-green-glow:rgba(31,157,84,.26);
+        --dw-orange:#8a5200;--dw-orange-dot:#cf7a1e;--dw-orange-bg:rgba(207,122,30,.13);--dw-orange-border:rgba(207,122,30,.5);--dw-orange-glow:rgba(207,122,30,.26);
+        --dw-red:#b3261e;--dw-red-bg:rgba(179,38,30,.10);
+      }
+
+      [data-theme="dark"] {
+        --md-sys-color-primary:#D0BCFF;--md-sys-color-on-primary:#381E72;--md-sys-color-primary-container:#4F378B;--md-sys-color-on-primary-container:#EADDFF;--md-sys-color-secondary:#CCC2DC;--md-sys-color-on-secondary:#332D41;--md-sys-color-secondary-container:#4A4458;--md-sys-color-on-secondary-container:#E8DEF8;--md-sys-color-tertiary:#EFB8C8;--md-sys-color-on-tertiary:#492532;--md-sys-color-tertiary-container:#633B48;--md-sys-color-on-tertiary-container:#FFD8E4;--md-sys-color-error:#F2B8B5;--md-sys-color-on-error:#601410;--md-sys-color-error-container:#8C1D18;--md-sys-color-on-error-container:#F9DEDC;--md-sys-color-background:#141218;--md-sys-color-on-background:#E6E0E9;--md-sys-color-surface:#141218;--md-sys-color-on-surface:#E6E0E9;--md-sys-color-surface-variant:#49454F;--md-sys-color-on-surface-variant:#CAC4D0;--md-sys-color-outline:#938F99;--md-sys-color-outline-variant:#49454F;--md-sys-color-inverse-surface:#E6E0E9;--md-sys-color-inverse-on-surface:#322F35;--md-sys-color-inverse-primary:#6750A4;--md-sys-color-surface-tint:#D0BCFF;--md-sys-color-surface-dim:#141218;--md-sys-color-surface-bright:#3B383E;--md-sys-color-surface-container-lowest:#0F0D13;--md-sys-color-surface-container-low:#1D1B20;--md-sys-color-surface-container:#211F26;--md-sys-color-surface-container-high:#2B2930;--md-sys-color-surface-container-highest:#36343B;color-scheme:dark;
+        --dw-green:#8fe6b0;--dw-green-dot:#4ade80;--dw-green-bg:rgba(80,190,130,.14);--dw-green-border:rgba(74,222,128,.45);--dw-green-glow:rgba(74,222,128,.28);
+        --dw-orange:#f3c07f;--dw-orange-dot:#f5a742;--dw-orange-bg:rgba(240,160,70,.14);--dw-orange-border:rgba(245,167,66,.45);--dw-orange-glow:rgba(245,167,66,.28);
+        --dw-red:#f2b8b5;--dw-red-bg:rgba(242,184,181,.12);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+      body { background: #141218; font-family: var(--md-sys-typescale-plain-font); -webkit-font-smoothing: antialiased; }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--md-sys-color-outline-variant); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--md-sys-color-outline); }
+      @keyframes dashPulse { 0% { transform: scale(.8); opacity: .55; } 70% { transform: scale(2.4); opacity: 0; } 100% { opacity: 0; } }
+      @keyframes dashBlink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+      @keyframes dashSlideIn { from { opacity: 0; transform: translateY(-14px); background: var(--md-sys-color-primary-container); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes dashFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+      #app {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--md-sys-color-background);
+        color: var(--md-sys-color-on-surface);
+        font-family: var(--md-sys-typescale-plain-font);
+      }
+
+      .monitor-header {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 56px;
+        padding: 0 18px;
+        background: var(--md-sys-color-surface-container-low);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      .folder-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .folder-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+        font-size: 16px;
+        flex: none;
+      }
+
+      .folder-label {
+        font-size: 10px;
+        letter-spacing: .6px;
+        text-transform: uppercase;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .folder-path {
+        max-width: 42vw;
+        font-family: var(--md-sys-typescale-mono-font);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--md-sys-color-on-surface);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .spacer { flex: 1; min-width: 12px; }
+      .stats { display: flex; align-items: center; gap: 7px; }
+      .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .2px;
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        background: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+        white-space: nowrap;
+      }
+      .stat-chip b { font-family: var(--md-sys-typescale-mono-font); font-weight: 700; }
+      .stat-chip .weak { opacity: .6; font-weight: 400; }
+      .stat-chip.new { border-color: var(--dw-green-border); background: var(--dw-green-bg); color: var(--dw-green); }
+      .stat-chip.mod { border-color: var(--dw-orange-border); background: var(--dw-orange-bg); color: var(--dw-orange); }
+      .dot { width: 7px; height: 7px; border-radius: 999px; flex: none; }
+      .dot.new { background: var(--dw-green-dot); }
+      .dot.mod { background: var(--dw-orange-dot); }
+      .rule { width: 1px; height: 22px; background: var(--md-sys-color-outline-variant); flex: none; }
+
+      .theme-toggle {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px;
+        border-radius: 999px;
+        background: var(--md-sys-color-surface-container-high);
+        border: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      .theme-toggle button {
+        border: 0;
+        cursor: pointer;
+        font-family: var(--md-sys-typescale-plain-font);
+        font-size: 12.5px;
+        font-weight: 500;
+        padding: 6px 13px;
+        border-radius: 999px;
+        transition: all .18s;
+        background: transparent;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      [data-theme="light"] .theme-toggle [data-theme-set="light"],
+      [data-theme="dark"] .theme-toggle [data-theme-set="dark"] {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+      }
+
+      .live-pill {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        cursor: pointer;
+        border: 1px solid var(--dw-green-border);
+        background: var(--dw-green-bg);
+        color: var(--dw-green);
+        padding: 7px 13px;
+        border-radius: 999px;
+        transition: all .2s;
+        font-family: var(--md-sys-typescale-plain-font);
+        white-space: nowrap;
+      }
+
+      #app:not([data-live]) .live-pill {
+        border-color: var(--md-sys-color-outline-variant);
+        background: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .live-mark { position: relative; display: inline-flex; width: 9px; height: 9px; }
+      .live-dot, .live-pulse { position: absolute; inset: 0; border-radius: 999px; background: var(--dw-green-dot); }
+      .live-dot { animation: dashBlink 1.6s ease-in-out infinite; }
+      .live-pulse { animation: dashPulse 1.8s ease-out infinite; }
+      #app:not([data-live]) .live-dot { background: var(--md-sys-color-outline); animation: none; }
+      #app:not([data-live]) .live-pulse { display: none; }
+      .live-label { font-size: 12.5px; font-weight: 500; letter-spacing: .2px; }
+      #app:not([data-live]) .live-on, #app[data-live] .live-off { display: none; }
+
+      .monitor-main {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      @media (max-width: 900px) {
+        html, body { overflow: auto; }
+        body { min-height: 100%; }
+        #app { min-height: 100vh; height: auto; overflow: visible; }
+        .monitor-header { height: auto; min-height: 56px; flex-wrap: wrap; padding: 10px 12px; }
+        .folder-path { max-width: 74vw; }
+        .spacer { display: none; }
+        .monitor-main { display: block; overflow: visible; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" data-theme="dark" data-live>
+      <header class="monitor-header">
+        <div class="folder-group">
+          <span class="folder-chip">📁</span>
+          <div style="min-width:0">
+            <div class="folder-label">모니터링 중인 프로젝트</div>
+            <div class="folder-path" title={repoPath}>{repoPath}</div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="stats">
+          <div class="stat-chip" title="추적 중인 전체 마크다운 파일"><span class="weak">파일</span><b id="stat-total">{docsTotal}</b></div>
+          <div class="stat-chip new" title="신규 생성된 파일 수"><span class="dot new"></span>NEW <b id="stat-new">{newCount}</b></div>
+          <div class="stat-chip mod" title="수정된 파일 수"><span class="dot mod"></span>MOD <b id="stat-mod">{modCount}</b></div>
+        </div>
+        <div class="rule"></div>
+        <div class="theme-toggle" role="group" aria-label="theme">
+          <button type="button" data-theme-set="light" title="밝은 테마">☀ 밝게</button>
+          <button type="button" data-theme-set="dark" title="어두운 테마">🌙 어둡게</button>
+        </div>
+        <button class="live-pill" type="button" title="라이브 추적 켜기/끄기">
+          <span class="live-mark"><span class="live-dot"></span><span class="live-pulse"></span></span>
+          <span class="live-label live-on">Live Tracking Active</span>
+          <span class="live-label live-off">Paused</span>
+        </button>
+      </header>
+      <main class="monitor-main"><slot /></main>
+    </div>
+    <script>
+      const app = document.getElementById('app');
+      const themeButtons = document.querySelectorAll('[data-theme-set]');
+      const liveButton = document.querySelector('.live-pill');
+
+      function setTheme(theme) {
+        if (!app || (theme !== 'light' && theme !== 'dark')) return;
+        app.dataset.theme = theme;
+        try { localStorage.setItem('dw-theme', theme); } catch {}
+      }
+
+      function setLive(live) {
+        if (!app) return;
+        if (live) app.setAttribute('data-live', '');
+        else app.removeAttribute('data-live');
+        document.dispatchEvent(new CustomEvent('dw:live-toggle', { detail: { live } }));
+      }
+
+      try {
+        const saved = localStorage.getItem('dw-theme');
+        setTheme(saved === 'light' ? 'light' : 'dark');
+      } catch {
+        setTheme('dark');
+      }
+
+      themeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (button instanceof HTMLElement) setTheme(button.dataset.themeSet);
+        });
+      });
+
+      liveButton?.addEventListener('click', () => {
+        setLive(!app?.hasAttribute('data-live'));
+      });
+    </script>
+  </body>
+</html>

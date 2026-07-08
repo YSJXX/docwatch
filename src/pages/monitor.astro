@@ -1,0 +1,628 @@
+---
+import MonitorLayout from '@/layouts/MonitorLayout.astro';
+import { getCollection } from 'astro:content';
+import { DEFAULT_CONFIG } from '@/data/config';
+import { getActivity } from '@/data/activity';
+import { resolveCategory } from '@/data/categories';
+import { scanCheckboxes, scanGitLog } from '@/data/scan';
+import { buildDocIndex, fileToDocId, targetRepoRoot } from '@/data/paths';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+export const prerender = false;
+
+type Status = 'NEW' | 'MOD' | 'DOC';
+type PlanItem = { text: string; done: boolean };
+type Detail = {
+  name: string;
+  dir: string;
+  path: string;
+  status: Status;
+  size: string;
+  created: string;
+  lines: string;
+  excerpt: string;
+  plan?: PlanItem[];
+};
+type TimelineItem = { id?: string; name: string; dir: string; status: Status; ago: string; preview: string | null; rel: string; mtime: number };
+type TreeNode = { depth: number; isDir: boolean; name: string; id?: string; status?: Status };
+
+function esc(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function mappedStatus(status: string | undefined): Exclude<Status, 'DOC'> | null {
+  if (status === '??' || status === 'A' || status === 'C') return 'NEW';
+  if (status === 'M' || status === 'R') return 'MOD';
+  return null;
+}
+
+function humanSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function stamp(ms: number) {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function ago(ms: number) {
+  const mins = Math.max(0, Math.round((Date.now() - ms) / 60_000));
+  if (mins < 1) return '방금 전';
+  if (mins < 60) return `${mins}분 전`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  return `${Math.round(hours / 24)}일 전`;
+}
+
+function excerptOf(markdown: string) {
+  const text = markdown
+    .replace(/\r\n/g, '\n')
+    .split(/\n{2,}/)
+    .map(block => block.trim())
+    .find(block => block && !/^#{1,6}\s/.test(block) && !/^```/.test(block));
+  const cleaned = (text ?? '문서 발췌를 찾을 수 없습니다.')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned.length > 280 ? `${cleaned.slice(0, 277)}...` : cleaned;
+}
+
+function parsePlan(markdown: string): PlanItem[] | undefined {
+  const items: PlanItem[] = [];
+  let inFence = false;
+  for (const raw of markdown.replace(/\r\n/g, '\n').split('\n')) {
+    if (/^\s*```/.test(raw)) { inFence = !inFence; continue; }
+    if (inFence) continue;
+    const line = raw.replace(/`[^`\n]*`/g, '');
+    const m = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
+    if (m) items.push({ done: m[1] !== ' ', text: m[2].trim() });
+  }
+  return items.length ? items : undefined;
+}
+
+function dirOf(rel: string) {
+  const dir = path.posix.dirname(rel);
+  return dir === '.' ? '' : `${dir}/`;
+}
+
+function buildTree(docs: Array<{ id: string; rel: string; name: string; status: Status }>): TreeNode[] {
+  type Node = { dirs: Map<string, Node>; files: Array<{ id: string; name: string; status: Status }> };
+  const root: Node = { dirs: new Map(), files: [] };
+
+  for (const doc of docs) {
+    const parts = doc.rel.split('/');
+    const file = parts.pop() ?? doc.name;
+    let node = root;
+    for (const part of parts) {
+      const next = node.dirs.get(part) ?? { dirs: new Map(), files: [] };
+      node.dirs.set(part, next);
+      node = next;
+    }
+    node.files.push({ id: doc.id, name: file, status: doc.status });
+  }
+
+  const out: TreeNode[] = [];
+  const walk = (node: Node, depth: number) => {
+    [...node.dirs.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([name, child]) => {
+      out.push({ depth, isDir: true, name });
+      walk(child, depth + 1);
+    });
+    node.files.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
+      out.push({ depth, isDir: false, name: file.name, id: file.id, status: file.status });
+    });
+  };
+  walk(root, 0);
+  return out;
+}
+
+const root = targetRepoRoot();
+const docs = await getCollection('docs');
+const activity = await getActivity(root, DEFAULT_CONFIG);
+const commits = await scanGitLog(root, 20).catch(() => []);
+const docIndex = buildDocIndex(docs);
+const sourceRelById = new Map([...docIndex].map(([sourceRelPath, id]) => [id, sourceRelPath]));
+const dirtyByRel = new Map<string, Exclude<Status, 'DOC'>>();
+let newCount = 0, modCount = 0;
+
+for (const entry of activity.dirty) {
+  const status = mappedStatus(entry.status);
+  if (!status) continue;
+  dirtyByRel.set(entry.path, status);
+  if (status === 'NEW') newCount++;
+  else modCount++;
+}
+
+const details: Record<string, Detail> = {};
+const docSources = await Promise.all(docs.map(async entry => {
+  const rel = sourceRelById.get(entry.id) ?? entry.id;
+  const abs = path.join(root, rel);
+  const [content, stat] = await Promise.all([
+    fs.readFile(abs, 'utf8').catch(() => ''),
+    fs.stat(abs).catch(() => null),
+  ]);
+  const status = dirtyByRel.get(rel) ?? 'DOC';
+  const lines = content ? String(content.replace(/\r\n/g, '\n').split('\n').length) : '0';
+  const planStats = scanCheckboxes(content);
+  const plan = planStats.total ? parsePlan(content) : undefined;
+  const name = path.posix.basename(rel);
+  const dir = dirOf(rel);
+  const detail: Detail = {
+    name,
+    dir,
+    path: rel,
+    status,
+    size: stat ? humanSize(stat.size) : '0 B',
+    created: stat ? stamp(stat.mtimeMs) : '—',
+    lines,
+    excerpt: excerptOf(content),
+    ...(plan ? { plan } : {}),
+  };
+  details[entry.id] = detail;
+  return { id: entry.id, rel, name, dir, status, mtime: stat?.mtimeMs ?? 0, category: resolveCategory(rel, DEFAULT_CONFIG.categories) };
+}));
+
+const timelineByRel = new Map<string, TimelineItem>();
+for (const item of activity.recentlyModified) {
+  const id = fileToDocId(item.path, docIndex) ?? undefined;
+  const detail = id ? details[id] : null;
+  timelineByRel.set(item.path, {
+    id,
+    rel: item.path,
+    name: detail?.name ?? path.posix.basename(item.path),
+    dir: detail?.dir ?? dirOf(item.path),
+    status: (detail?.status ?? dirtyByRel.get(item.path) ?? 'DOC') as Status,
+    ago: ago(item.mtime),
+    preview: id ? `/preview/${id}` : null,
+    mtime: item.mtime,
+  });
+}
+for (const item of activity.dirty) {
+  const status = mappedStatus(item.status);
+  if (!status) continue;
+  const id = fileToDocId(item.path, docIndex) ?? undefined;
+  const detail = id ? details[id] : null;
+  if (timelineByRel.has(item.path)) {
+    const existing = timelineByRel.get(item.path);
+    if (existing) existing.status = status;
+    continue;
+  }
+  timelineByRel.set(item.path, {
+    id,
+    rel: item.path,
+    name: detail?.name ?? path.posix.basename(item.path),
+    dir: detail?.dir ?? dirOf(item.path),
+    status,
+    ago: '방금 전',
+    preview: id ? `/preview/${id}` : null,
+    mtime: Date.now(),
+  });
+}
+
+const timeline = [...timelineByRel.values()].sort((a, b) => b.mtime - a.mtime).slice(0, 16);
+if (!timeline.length && commits[0]) {
+  const commit = commits[0];
+  for (const file of commit.files.slice(0, 6)) {
+    const id = fileToDocId(file, docIndex) ?? undefined;
+    const detail = id ? details[id] : null;
+    timeline.push({
+      id,
+      rel: file,
+      name: detail?.name ?? path.posix.basename(file),
+      dir: detail?.dir ?? dirOf(file),
+      status: detail?.status ?? 'DOC',
+      ago: commit.relTime,
+      preview: id ? `/preview/${id}` : null,
+      mtime: 0,
+    });
+  }
+}
+
+const tree = buildTree(docSources);
+const docsTotal = docs.length;
+void esc;
+---
+<MonitorLayout repoPath={root} docsTotal={docsTotal} newCount={newCount} modCount={modCount}>
+  <section class="monitor-col col-one">
+    <div class="section-head">
+      <div><span>⚡</span><b>실시간 타임라인</b></div>
+      <span class="count" id="timeline-count">{timeline.length}</span>
+    </div>
+    <div class="timeline-list" id="timeline-list">
+      {timeline.length ? timeline.map((item, index) => {
+        const attrs = item.preview ? { 'data-preview': item.preview, role: 'button', tabindex: '0' } : {};
+        return (
+          <div class={`timeline-row ${index === 0 ? 'fresh' : ''} ${item.status.toLowerCase()}`} data-id={item.id} data-rel={item.rel} {...attrs}>
+            <div class="row-top">
+              <span class="event-dot"></span>
+              <span class="row-name">{item.name}</span>
+              <span class="status-badge">{item.status}</span>
+            </div>
+            <div class="row-meta"><span>{item.dir}</span><span>{item.ago}</span></div>
+          </div>
+        );
+      }) : <div class="empty-state compact">최근 활동이 없습니다.</div>}
+    </div>
+
+    <div class="section-head tree-head">
+      <div><span>🗂️</span><b>프로젝트 파일 트리</b></div>
+    </div>
+    <div class="tree-list" id="tree-list">
+      {tree.map(node => node.isDir ? (
+        <div class="tree-row dir" style={`--depth:${node.depth}`}>
+          <span class="tree-icon">▸</span>
+          <span class="tree-name">{node.name}</span>
+        </div>
+      ) : (
+        <div class={`tree-row file ${(node.status ?? 'DOC').toLowerCase()}`} style={`--depth:${node.depth}`} data-preview={`/preview/${node.id}`} role="button" tabindex="0">
+          <span class="tree-icon"></span>
+          <span class="tree-name">{node.name}</span>
+          <span class="status-badge">{node.status}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="monitor-col col-two">
+    <div id="detail-pane">
+      <div class="empty-state">타임라인·트리에서 파일을 선택하세요</div>
+    </div>
+  </section>
+
+  <section class="monitor-col col-three">
+    <iframe id="doc-frame" title="document preview" hidden></iframe>
+    <div id="plan-pane" hidden></div>
+    <div id="col3-empty" class="empty-state">문서 미리보기 또는 계획 추적기가 여기에 표시됩니다.</div>
+  </section>
+
+  <script id="dw-details" type="application/json" set:html={JSON.stringify(details).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('&', '\\u0026')}></script>
+
+  <style is:global>
+    .monitor-col { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--md-sys-color-surface-container-low); }
+    .col-one { flex: 0 0 23%; border-right: 1px solid var(--md-sys-color-outline-variant); }
+    .col-two { flex: 0 0 30%; border-right: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface-container-lowest); }
+    .col-three { flex: 1 1 47%; background: var(--md-sys-color-background); position: relative; }
+    .section-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
+    .section-head > div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .section-head b { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--md-sys-color-on-surface); }
+    .section-head .count { font-family: var(--md-sys-typescale-mono-font); font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
+    .tree-head { border-top: 1px solid var(--md-sys-color-outline-variant); }
+    .timeline-list { flex: 1 1 55%; min-height: 0; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .tree-list { flex: 1 1 45%; min-height: 0; overflow-y: auto; padding: 6px 8px; }
+    .timeline-row { padding: 5px 9px; border-radius: 5px; border: 1px solid transparent; background: transparent; transition: background .15s, border-color .15s; }
+    .timeline-row.fresh { animation: dashSlideIn .55s ease; }
+    .row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .event-dot { flex: none; width: 8px; height: 8px; border-radius: 999px; background: var(--md-sys-color-outline); }
+    .timeline-row.new .event-dot { background: var(--dw-green-dot); box-shadow: 0 0 0 3px var(--dw-green-glow); }
+    .timeline-row.mod .event-dot { background: var(--dw-orange-dot); box-shadow: 0 0 0 3px var(--dw-orange-glow); }
+    .row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--md-sys-typescale-mono-font); font-size: 12px; font-weight: 500; color: var(--md-sys-color-on-surface); }
+    .status-badge { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 9.5px; font-weight: 500; letter-spacing: .4px; padding: 1px 6px; border-radius: 4px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
+    .new .status-badge { background: var(--dw-green-bg); color: var(--dw-green); }
+    .mod .status-badge { background: var(--dw-orange-bg); color: var(--dw-orange); }
+    .row-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 3px; font-size: 10px; color: var(--md-sys-color-on-surface-variant); min-width: 0; }
+    .row-meta span:first-child { font-family: var(--md-sys-typescale-mono-font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-row { display: flex; align-items: center; gap: 7px; padding: 3px 8px; padding-left: calc(8px + var(--depth) * 15px); border-radius: 6px; min-width: 0; transition: background .12s; }
+    .tree-row.dir { cursor: default; }
+    .tree-row.file { cursor: pointer; }
+    .tree-icon { flex: none; width: 10px; font-size: 10px; color: var(--md-sys-color-on-surface-variant); }
+    .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--md-sys-typescale-mono-font); font-size: 12px; }
+    .tree-row.dir .tree-name { font-weight: 700; color: var(--md-sys-color-on-surface-variant); }
+    [data-preview] { cursor: pointer; }
+    [data-preview]:hover, [data-preview]:focus-visible { background: var(--md-sys-color-surface-container-high); outline: none; }
+    [data-preview].sel { background: var(--md-sys-color-primary-container); border-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary-container); }
+    [data-preview].sel .row-name, [data-preview].sel .tree-name { color: var(--md-sys-color-on-primary-container); }
+    #detail-pane { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; animation: dashFade .28s ease; }
+    .detail-head { flex: none; padding: 8px 12px; margin: -10px -12px 10px; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
+    .detail-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .detail-name { font-family: var(--md-sys-typescale-mono-font); font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .detail-sub { font-size: 11px; color: var(--md-sys-color-on-surface-variant); margin-top: 3px; }
+    .meta-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .meta-chip { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 5px; background: var(--md-sys-color-surface-container-high); font-size: 11px; min-width: 88px; }
+    .meta-chip span { color: var(--md-sys-color-on-surface-variant); }
+    .meta-chip b { font-family: var(--md-sys-typescale-mono-font); font-weight: 500; }
+    .excerpt-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--dw-green); margin-bottom: 10px; }
+    .excerpt { border-left: 3px solid var(--dw-green-border); padding: 2px 0 2px 14px; color: var(--md-sys-color-on-surface-variant); font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; }
+    .notice { margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; background: var(--dw-orange-bg); color: var(--dw-orange); font-size: 12px; }
+    .empty-state { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--md-sys-color-on-surface-variant); font-size: 13px; }
+    .empty-state.compact { min-height: 120px; }
+    .empty-state[hidden] { display: none; }
+    #doc-frame { width: 100%; height: 100%; border: 0; background: #fff; }
+    #doc-frame[hidden] { display: none; }
+    #plan-pane { height: 100%; overflow-y: auto; padding: 20px 24px; animation: dashFade .3s ease; }
+    .plan-wrap { max-width: 760px; margin: 0 auto; }
+    .plan-kicker { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--md-sys-color-primary); margin-bottom: 8px; }
+    .plan-title { font-size: 22px; font-weight: 700; color: var(--md-sys-color-on-surface); margin-bottom: 16px; }
+    .plan-progress { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .plan-track { flex: 1; height: 9px; border-radius: 999px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
+    .plan-bar { height: 100%; background: var(--md-sys-color-primary); border-radius: 999px; transition: width .4s ease; }
+    .plan-label { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface); }
+    .plan-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+    .plan-tab { cursor: pointer; border: 1px solid var(--md-sys-color-outline-variant); font-family: var(--md-sys-typescale-plain-font); font-size: 12.5px; font-weight: 500; padding: 6px 13px; border-radius: 999px; transition: all .15s; background: transparent; color: var(--md-sys-color-on-surface-variant); }
+    .plan-tab.active { background: var(--md-sys-color-secondary-container); border-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+    .plan-items { display: flex; flex-direction: column; gap: 8px; }
+    .plan-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; background: var(--md-sys-color-surface-container); }
+    .plan-box { flex: none; width: 22px; height: 22px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; transition: all .15s; background: transparent; border: 2px solid var(--md-sys-color-outline); color: transparent; }
+    .plan-row.done .plan-box { background: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+    .plan-text { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; color: var(--md-sys-color-on-surface); }
+    .plan-row.done .plan-text { color: var(--md-sys-color-on-surface-variant); }
+    .plan-tag { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 9.5px; font-weight: 500; letter-spacing: .4px; padding: 2px 7px; border-radius: 5px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
+    .plan-row.done .plan-tag { background: var(--dw-green-bg); color: var(--dw-green); }
+    @media (max-width: 900px) {
+      .monitor-col { min-height: 70vh; border-right: 0; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
+      .col-one, .col-two, .col-three { flex: none; }
+    }
+  </style>
+
+  <script>
+    const detailsEl = document.getElementById('dw-details');
+    const details = detailsEl?.textContent ? JSON.parse(detailsEl.textContent) : {};
+    const detailPane = document.getElementById('detail-pane');
+    const frame = document.getElementById('doc-frame');
+    const planPane = document.getElementById('plan-pane');
+    const col3Empty = document.getElementById('col3-empty');
+    const timelineList = document.getElementById('timeline-list');
+    const timelineCount = document.getElementById('timeline-count');
+    const statNew = document.getElementById('stat-new');
+    const statMod = document.getElementById('stat-mod');
+    let poll = 0;
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function badge(status) {
+      const node = el('span', 'status-badge', status);
+      return node;
+    }
+
+    function fillDetail(id) {
+      const detail = details[id];
+      if (!detail || !detailPane) return;
+      detailPane.replaceChildren();
+
+      const head = el('div', 'detail-head');
+      const title = el('div', 'detail-title');
+      title.append(badge(detail.status), el('span', 'detail-name', detail.name));
+      head.append(title, el('div', 'detail-sub', detail.dir || detail.path));
+      detailPane.append(head);
+
+      if (detail.status === 'NEW') {
+        const metas = el('div', 'meta-grid');
+        [['크기', detail.size], ['생성일', detail.created], ['라인', detail.lines]].forEach(([label, value]) => {
+          const chip = el('div', 'meta-chip');
+          chip.append(el('span', '', label), el('b', '', value));
+          metas.append(chip);
+        });
+        detailPane.append(metas, el('div', 'excerpt-label', '✦ 문서 발췌'), el('div', 'excerpt', detail.excerpt));
+      } else if (detail.status === 'MOD') {
+        detailPane.append(
+          el('div', 'notice', '라인 단위 diff는 다음 버전입니다 — 아래는 문서 발췌'),
+          el('div', 'excerpt-label', '✦ 문서 발췌'),
+          el('div', 'excerpt', detail.excerpt),
+        );
+      } else {
+        detailPane.append(el('div', 'excerpt-label', '✦ 문서 발췌'), el('div', 'excerpt', detail.excerpt));
+      }
+    }
+
+    function renderPlan(id) {
+      const detail = details[id];
+      if (!detail?.plan || !planPane || !(frame instanceof HTMLIFrameElement) || !col3Empty) return false;
+      const state = detail.plan.map(item => ({ ...item }));
+      let filter = 'all';
+
+      function draw() {
+        const done = state.filter(item => item.done).length;
+        const total = state.length || 1;
+        const pct = Math.round((done / total) * 100);
+        const visible = state.filter(item => filter === 'all' || (filter === 'done' ? item.done : !item.done));
+        const wrap = el('div', 'plan-wrap');
+        wrap.append(el('div', 'plan-kicker', '☑ 계획 추적'), el('div', 'plan-title', detail.name));
+
+        const progress = el('div', 'plan-progress');
+        const track = el('div', 'plan-track');
+        const bar = el('div', 'plan-bar');
+        bar.style.width = `${pct}%`;
+        track.append(bar);
+        progress.append(track, el('span', 'plan-label', `${done} / ${state.length} 완료 · ${pct}%`));
+        wrap.append(progress);
+
+        const tabs = el('div', 'plan-tabs');
+        [
+          ['all', `전체 ${state.length}`],
+          ['done', `완료 ${done}`],
+          ['todo', `예정 ${state.length - done}`],
+        ].forEach(([key, label]) => {
+          const tab = el('button', `plan-tab ${filter === key ? 'active' : ''}`, label);
+          tab.type = 'button';
+          tab.addEventListener('click', () => { filter = key; draw(); });
+          tabs.append(tab);
+        });
+        wrap.append(tabs);
+
+        const rows = el('div', 'plan-items');
+        visible.forEach(item => {
+          const row = el('div', `plan-row ${item.done ? 'done' : ''}`);
+          const box = el('button', 'plan-box', item.done ? '✓' : '');
+          box.type = 'button';
+          box.title = '표시 전용 · 파일 미저장';
+          box.addEventListener('click', () => { item.done = !item.done; draw(); });
+          row.append(box, el('span', 'plan-text', item.text), el('span', 'plan-tag', item.done ? '완료' : '예정'));
+          rows.append(row);
+        });
+        if (!visible.length) rows.append(el('div', 'empty-state compact', '해당 상태의 계획이 없습니다.'));
+        wrap.append(rows);
+        planPane.replaceChildren(wrap);
+      }
+
+      draw();
+      planPane.hidden = false;
+      frame.hidden = true;
+      col3Empty.hidden = true;
+      return true;
+    }
+
+    function openPreview(id) {
+      if (renderPlan(id)) return;
+      if (!(frame instanceof HTMLIFrameElement) || !planPane || !col3Empty) return;
+      const url = `/preview/${id}`;
+      if (!url.startsWith('/preview/')) return;
+      frame.src = url;
+      frame.hidden = false;
+      planPane.hidden = true;
+      col3Empty.hidden = true;
+    }
+
+    function select(id, target) {
+      if (!id || !details[id]) return;
+      document.querySelectorAll('[data-preview].sel').forEach(node => node.classList.remove('sel'));
+      if (target instanceof HTMLElement) target.classList.add('sel');
+      fillDetail(id);
+      openPreview(id);
+      history.replaceState(null, '', '?doc=' + encodeURIComponent(`/preview/${id}`));
+    }
+
+    function idFromPreview(url) {
+      return url?.startsWith('/preview/') ? url.slice('/preview/'.length) : '';
+    }
+
+    function openTarget(target) {
+      if (!(target instanceof HTMLElement)) return;
+      const url = target.dataset.preview;
+      const id = idFromPreview(url);
+      if (!id) return;
+      select(id, target);
+    }
+
+    document.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target.closest('[data-preview]') : null;
+      openTarget(target);
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const target = event.target instanceof Element ? event.target.closest('[data-preview]') : null;
+      if (!target) return;
+      event.preventDefault();
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    function renderTimeline(items, fresh) {
+      if (!timelineList) return;
+      timelineList.replaceChildren();
+      items.slice(0, 16).forEach((item, index) => {
+        const row = el('div', `timeline-row ${(item.status || 'DOC').toLowerCase()} ${fresh && index === 0 ? 'fresh' : ''}`);
+        if (item.preview) {
+          row.dataset.preview = item.preview;
+          row.setAttribute('role', 'button');
+          row.tabIndex = 0;
+        }
+        const top = el('div', 'row-top');
+        top.append(el('span', 'event-dot'), el('span', 'row-name', item.name), badge(item.status || 'DOC'));
+        const meta = el('div', 'row-meta');
+        meta.append(el('span', '', item.dir || ''), el('span', '', item.ago || '방금 전'));
+        row.append(top, meta);
+        timelineList.append(row);
+      });
+      if (!items.length) timelineList.append(el('div', 'empty-state compact', '최근 활동이 없습니다.'));
+      if (timelineCount) timelineCount.textContent = String(items.length);
+    }
+
+    function relDir(rel) {
+      const idx = rel.lastIndexOf('/');
+      return idx === -1 ? '' : rel.slice(0, idx + 1);
+    }
+
+    function statusOf(raw) {
+      if (raw === '??' || raw === 'A' || raw === 'C') return 'NEW';
+      if (raw === 'M' || raw === 'R') return 'MOD';
+      return null;
+    }
+
+    async function pollLive() {
+      const res = await fetch('/api/activity.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      let nextNew = 0, nextMod = 0;
+      const byRel = new Map();
+
+      (data.recentlyModified || []).forEach(item => {
+        const detailEntry = Object.entries(details).find(([, detail]) => detail.path === item.path);
+        const id = detailEntry?.[0];
+        const detail = detailEntry?.[1];
+        byRel.set(item.path, {
+          preview: id ? `/preview/${id}` : null,
+          name: detail?.name || item.path.split('/').pop() || item.path,
+          dir: detail?.dir || relDir(item.path),
+          status: detail?.status || 'DOC',
+          ago: '방금 전',
+          mtime: item.mtime || 0,
+        });
+      });
+
+      (data.dirty || []).forEach(item => {
+        const status = statusOf(item.status);
+        if (!status) return;
+        if (status === 'NEW') nextNew++;
+        else nextMod++;
+        const detailEntry = Object.entries(details).find(([, detail]) => detail.path === item.path);
+        const id = detailEntry?.[0];
+        const detail = detailEntry?.[1];
+        const existing = byRel.get(item.path);
+        byRel.set(item.path, {
+          preview: id ? `/preview/${id}` : null,
+          name: detail?.name || item.path.split('/').pop() || item.path,
+          dir: detail?.dir || relDir(item.path),
+          status,
+          ago: existing?.ago || '방금 전',
+          mtime: existing?.mtime || Date.now(),
+        });
+      });
+
+      const items = [...byRel.values()].sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 16);
+      renderTimeline(items, true);
+      if (statNew) statNew.textContent = String(nextNew);
+      if (statMod) statMod.textContent = String(nextMod);
+    }
+
+    function setLivePolling(live) {
+      window.clearInterval(poll);
+      poll = 0;
+      if (live) poll = window.setInterval(() => { pollLive().catch(() => {}); }, 5000);
+    }
+
+    document.addEventListener('dw:live-toggle', event => {
+      setLivePolling(Boolean(event.detail?.live));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-preview]').forEach(node => {
+        if (node instanceof HTMLElement && !node.hasAttribute('tabindex')) node.tabIndex = 0;
+      });
+      const doc = new URLSearchParams(location.search).get('doc');
+      if (doc) {
+        const match = document.querySelector(`[data-preview="${CSS.escape(doc)}"]`);
+        if (match instanceof HTMLElement) openTarget(match);
+        else if (doc.startsWith('/preview/')) {
+          const id = idFromPreview(doc);
+          if (details[id]) select(id, null);
+        }
+      }
+      setLivePolling(document.getElementById('app')?.hasAttribute('data-live'));
+    });
+  </script>
+</MonitorLayout>
