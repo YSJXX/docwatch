@@ -38,6 +38,7 @@ docwatch is a long-running dev server. It occupies one terminal while it is runn
 | --- | --- | --- |
 | `targetDir` | Current working directory | Repository or workspace to watch. |
 | `--port N` | `4321` | Port for the local dev server. |
+| `--host <host>` | localhost | Bind the dev server to a specific host, e.g. 0.0.0.0 for container/remote access; defaults to localhost. |
 | `--no-open` | Opens by default | Disable automatic browser opening. |
 
 Examples:

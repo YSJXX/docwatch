@@ -4,6 +4,7 @@ export function parseArgs(argv, cwd) {
   let target = cwd;
   let port = 4321;
   let open = true;
+  let host;
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -11,11 +12,17 @@ export function parseArgs(argv, cwd) {
       const value = argv[++i];
       port = parsePort(value);
     }
+    else if (a === '--host') {
+      host = argv[++i];
+      if (host === undefined) {
+        throw new Error('Missing value for --host');
+      }
+    }
     else if (a === '--no-open') open = false;
     else if (!a.startsWith('-')) target = path.resolve(cwd, a);
   }
 
-  return { target, port, open };
+  return { target, port, open, host };
 }
 
 function parsePort(value) {

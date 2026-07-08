@@ -25,11 +25,16 @@ try {
   process.exit(1);
 }
 
-const { target, port, open } = args;
+const { target, port, open, host } = args;
 const astroBin = path.join(path.dirname(astroPkgPath), astroEntry);
+const astroArgs = [astroBin, 'dev', '--root', pkgRoot, '--port', String(port)];
+
+if (host !== undefined) {
+  astroArgs.push('--host', host);
+}
 
 console.log(`[docwatch] watching ${target}`);
-const child = spawn(process.execPath, [astroBin, 'dev', '--root', pkgRoot, '--port', String(port)], {
+const child = spawn(process.execPath, astroArgs, {
   env: { ...process.env, DOCWATCH_ROOT: target, ASTRO_TELEMETRY_DISABLED: '1' },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
