@@ -40,3 +40,4 @@ coverage/
 .spike/
 tests/fixtures/sample-repo/
 *.tgz
+.gstack/
