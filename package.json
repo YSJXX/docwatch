@@ -12,7 +12,6 @@
   "files": [
     "bin/",
     "src/",
-    "public/",
     "astro.config.mjs",
     "tsconfig.json",
     "docwatch.config.ts"

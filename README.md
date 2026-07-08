@@ -23,7 +23,7 @@ docwatch is a long-running dev server. It occupies one terminal while it is runn
 | --- | --- |
 | `docs/` | Product docs, ADRs, plans, runbooks, and other project documentation. |
 | `.claude/plans/` | Claude Code planning artifacts. |
-| `.omc/` | oh-my-codex coordination and runtime artifacts. |
+| `.omc/` | oh-my-claudecode output and runtime artifacts. |
 | `AGENTS.md` | Workspace-level agent instructions. |
 | `CLAUDE.md` | Claude Code project instructions. |
 | `README.md` | Project overview and current entry point. |

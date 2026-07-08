@@ -43,7 +43,7 @@ npm run test:integration
 Run E2E tests:
 
 ```sh
-export LD_LIBRARY_PATH="$HOME/.local/chromium-libs:$LD_LIBRARY_PATH"
+npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 

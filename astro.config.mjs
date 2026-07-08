@@ -22,7 +22,7 @@ export default defineConfig({
   integrations: [
     gitWatchIntegration,
     starlight({
-      title: 'docview',
+      title: 'docwatch',
       sidebar: [{ label: 'Docs', autogenerate: { directory: '.' } }],
       expressiveCode: false,
       components: {
