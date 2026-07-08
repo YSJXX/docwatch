@@ -143,7 +143,7 @@ const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits
     function openPreview(target) {
       if (!(target instanceof HTMLElement)) return;
       const url = target.dataset.preview;
-      if (!url || !(frame instanceof HTMLIFrameElement) || !emptyState) return;
+      if (!url || !url.startsWith('/preview/') || !(frame instanceof HTMLIFrameElement) || !emptyState) return;
 
       frame.src = url;
       emptyState.hidden = true;
@@ -173,7 +173,7 @@ const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits
       if (!doc) return;
       const match = document.querySelector(`[data-preview="${CSS.escape(doc)}"]`);
       if (match instanceof HTMLElement) openPreview(match);
-      else if (frame instanceof HTMLIFrameElement && emptyState) {
+      else if (doc.startsWith('/preview/') && frame instanceof HTMLIFrameElement && emptyState) {
         frame.src = doc;
         emptyState.hidden = true;
       }
