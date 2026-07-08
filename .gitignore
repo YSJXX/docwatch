@@ -39,3 +39,4 @@ blob-report/
 coverage/
 .spike/
 tests/fixtures/sample-repo/
+*.tgz
