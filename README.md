@@ -11,6 +11,10 @@ npx docwatch
 
 docwatch is a local dev server for watching project artifacts as they change. It is not a token monitor or agent telemetry system. It watches the files that explain what is happening: docs, plans, runbooks, agent notes, and project instructions.
 
+## Security / Trust
+
+docwatch renders the target repository's Markdown as a live local site, including any raw HTML or scripts embedded in those docs. Only point docwatch at repositories you trust.
+
 ## What It Does
 
 docwatch turns a target repository into a live Starlight documentation site plus a dashboard. The dashboard shows recent git activity, recently modified docs, dirty files, active plan signals, and category progress from Markdown checkboxes.
@@ -45,11 +49,11 @@ npx docwatch ./my-project --port 5000 --no-open
 
 ## Configuration
 
-Create `docwatch.config.ts` in the target repository to override the default include patterns and category labels:
+Target-repository `docwatch.config.ts` overrides are planned for v0.2 and are not active in v0.1. For reference, v0.1 uses these built-in defaults:
 
 ```ts
-export default {
-  include: ['docs/**/*.md', '.claude/plans/**/*.md', 'AGENTS.md', 'README.md'],
+const defaults = {
+  include: ['docs/**/*.md', 'AGENTS.md', 'README.md', 'CLAUDE.md', '.omc/**/*.md', '.claude/plans/*.md'],
   exclude: ['**/node_modules/**', '.git/**'],
   categories: [
     { name: 'ADRs', match: 'docs/adr/**' },

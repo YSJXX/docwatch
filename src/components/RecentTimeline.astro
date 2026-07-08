@@ -6,7 +6,7 @@ const groups = new Map<string, Commit[]>();
 for (const c of commits) { const l = groups.get(c.relTime) ?? []; l.push(c); groups.set(c.relTime, l); }
 ---
 <div>
-  {commits.length === 0 && <p style="color:#888">git 저장소가 아니거나 커밋이 없습니다.</p>}
+  {commits.length === 0 && <p style="color:#888">No commits yet, or this is not a git repository.</p>}
   {[...groups.entries()].map(([label, list]) => (
     <div>
       <div style="font-weight:600;margin-top:8px;">{label}</div>

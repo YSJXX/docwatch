@@ -1,10 +1,9 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
-import { DEFAULT_CONFIG, loadConfig } from './data/config';
+import { DEFAULT_CONFIG } from './data/config';
 import { targetRepoRoot } from './data/paths';
 
 const root = targetRepoRoot();
-void loadConfig(root);
 
 const docs = defineCollection({
   loader: glob({
