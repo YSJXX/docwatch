@@ -5,50 +5,54 @@ import { DEFAULT_CONFIG } from '@/data/config';
 import { getActivity } from '@/data/activity';
 import { resolveCategory } from '@/data/categories';
 import { aggregateByCategory, scanGitLog } from '@/data/scan';
-import { absFromEntry, idToSourceRel, targetRepoRoot } from '@/data/paths';
+import { buildDocIndex, fileToDocId, targetRepoRoot } from '@/data/paths';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 export const prerender = false;
 
 const root = targetRepoRoot();
-const astroRoot = path.resolve(new URL('../..', import.meta.url).pathname);
 const docs = await getCollection('docs');
 const docsTotal = docs.length;
 const activity = await getActivity(root, DEFAULT_CONFIG);
 const dirtyCount = activity.dirty.length;
 const commits = await scanGitLog(root, 20).catch(() => []);
 const repoName = path.basename(root);
-const includeRoots = [...new Set(DEFAULT_CONFIG.include.map(pattern => pattern.split('/')[0]))];
-
-function sourceRelFromEntry(entry: (typeof docs)[number]): string | null {
-  const filePath = (entry as any).filePath as string | undefined;
-  if (filePath) {
-    const abs = absFromEntry(filePath, astroRoot);
-    return path.relative(root, abs).split(path.sep).join('/');
+const docIndex = buildDocIndex(docs);
+const sourceRelById = new Map([...docIndex].map(([sourceRelPath, id]) => [id, sourceRelPath]));
+const previewForFile = (fileRelPath: string) => {
+  const id = fileToDocId(fileRelPath, docIndex);
+  return id ? `/preview/${id}` : null;
+};
+const previewForFiles = (files: string[]) => {
+  for (const file of files) {
+    const preview = previewForFile(file);
+    if (preview) return preview;
   }
-  return idToSourceRel(entry.id, includeRoots);
-}
+  return null;
+};
 
 const docSources = docs.map(entry => ({
   id: entry.id,
-  sourceRelPath: sourceRelFromEntry(entry),
+  title: entry.data.title ?? entry.id.split('/').at(-1) ?? entry.id,
+  sourceRelPath: sourceRelById.get(entry.id) ?? entry.id,
 }));
 
 const entries = await Promise.all(docSources.map(async entry => ({
-  sourceRelPath: entry.sourceRelPath ?? entry.id,
+  sourceRelPath: entry.sourceRelPath,
   content: entry.sourceRelPath
     ? await fs.readFile(path.join(root, entry.sourceRelPath), 'utf8').catch(() => '')
     : '',
 })));
 const cats = aggregateByCategory(entries, DEFAULT_CONFIG.categories);
 const iconOf = (name: string) => DEFAULT_CONFIG.categories.find(c => c.name === name)?.icon ?? '📄';
-const firstDocByCategory = new Map<string, string>();
+const docsByCategory = new Map<string, typeof docSources>();
 
 for (const doc of docSources) {
-  if (!doc.sourceRelPath) continue;
   const category = resolveCategory(doc.sourceRelPath, DEFAULT_CONFIG.categories);
-  if (!firstDocByCategory.has(category)) firstDocByCategory.set(category, doc.id);
+  const categoryDocs = docsByCategory.get(category) ?? [];
+  categoryDocs.push(doc);
+  docsByCategory.set(category, categoryDocs);
 }
 
 const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits }>>((groups, commit) => {
@@ -63,12 +67,17 @@ const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits
   <aside class="rail" id="cockpit-rail">
     <section class="sect">
       <div class="h">Dirty <span class="n">{dirtyCount}</span></div>
-      {activity.dirty.length ? activity.dirty.map(entry => (
-        <div class="item">
-          <span class="badge">{entry.status}</span>
-          <span class="t mono">{entry.path}</span>
-        </div>
-      )) : <div class="empty">No dirty files</div>}
+      {activity.dirty.length ? activity.dirty.map(entry => {
+        const preview = previewForFile(entry.path);
+        const attrs = preview ? { 'data-preview': preview, role: 'button', tabindex: '0' } : {};
+
+        return (
+          <div class="item" {...attrs}>
+            <span class="badge">{entry.status}</span>
+            <span class="t mono">{entry.path}</span>
+          </div>
+        );
+      }) : <div class="empty">No dirty files</div>}
     </section>
 
     <section class="sect">
@@ -76,12 +85,17 @@ const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits
       {commitsByDay.length ? commitsByDay.map(group => (
         <>
           <div class="day">{group.day}</div>
-          {group.commits.map(commit => (
-            <div class="item">
-              <span class="sha">{commit.sha.slice(0, 7)}</span>
-              <span class="msg">{commit.subject}</span>
-            </div>
-          ))}
+          {group.commits.map(commit => {
+            const preview = previewForFiles(commit.files);
+            const attrs = preview ? { 'data-preview': preview, role: 'button', tabindex: '0' } : {};
+
+            return (
+              <div class="item" {...attrs}>
+                <span class="sha">{commit.sha.slice(0, 7)}</span>
+                <span class="msg">{commit.subject}</span>
+              </div>
+            );
+          })}
         </>
       )) : <div class="empty">No recent commits</div>}
     </section>
@@ -92,18 +106,25 @@ const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits
         const rounded = Math.round(cat.percent);
         const tone = rounded === 100 ? 'hi' : rounded > 0 ? 'mid' : 'lo';
         const width = rounded === 0 ? 2 : rounded;
-        const firstDocId = firstDocByCategory.get(cat.category);
-        const attrs = firstDocId
-          ? { 'data-preview': `/preview/${firstDocId}`, role: 'button', tabindex: '0' }
-          : {};
+        const categoryDocs = docsByCategory.get(cat.category) ?? [];
 
         return (
-          <div class="catrow" {...attrs}>
-            <div class="top">
-              <span class="nm">{iconOf(cat.category)} {cat.category}</span>
-              <span class={`pct ${tone}`}>{rounded}%</span>
+          <div class="catgroup">
+            <div class="catrow">
+              <div class="top">
+                <span class="nm">{iconOf(cat.category)} {cat.category}</span>
+                <span class={`pct ${tone}`}>{rounded}%</span>
+              </div>
+              <div class="bar"><i class={tone} style={`width:${width}%`}></i></div>
             </div>
-            <div class="bar"><i class={tone} style={`width:${width}%`}></i></div>
+            <div class="doclist">
+              {categoryDocs.map(doc => (
+                <div class="docitem" data-preview={`/preview/${doc.id}`} role="button" tabindex="0">
+                  <span class="docdot"></span>
+                  <span class="doctitle">{doc.title}</span>
+                </div>
+              ))}
+            </div>
           </div>
         );
       })}

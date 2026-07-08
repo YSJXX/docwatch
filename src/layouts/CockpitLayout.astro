@@ -187,6 +187,10 @@ const { title = 'docwatch cockpit', repoName, docsTotal, dirtyCount } = Astro.pr
         border-radius: 6px;
       }
 
+      .catgroup {
+        margin-bottom: 4px;
+      }
+
       [data-preview] {
         cursor: pointer;
       }
@@ -249,6 +253,38 @@ const { title = 'docwatch cockpit', repoName, docsTotal, dirtyCount } = Astro.pr
       }
 
       .bar > i.lo { background: #c4ccd4; }
+
+      .doclist {
+        margin: 0 0 4px 10px;
+        border-left: 1px solid var(--line);
+        padding-left: 8px;
+      }
+
+      .docitem {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .docdot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--faint);
+        flex: 0 0 auto;
+      }
+
+      .doctitle {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
       .empty {
         color: var(--faint);
