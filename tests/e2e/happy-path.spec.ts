@@ -7,9 +7,9 @@ test('dashboard renders three sections', async ({ page }) => {
   await expect(page.locator('#cards')).toBeVisible();
 });
 
-test('root redirects to /dashboard', async ({ page }) => {
+test('root redirects to /cockpit', async ({ page }) => {
   await page.goto('/');
-  expect(page.url()).toContain('/dashboard');
+  expect(page.url()).toContain('/cockpit');
 });
 
 test('hostile frontmatter document renders', async ({ page }) => {
