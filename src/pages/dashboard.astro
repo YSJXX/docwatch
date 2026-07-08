@@ -6,6 +6,7 @@ import LiveActivityBanner from '@/components/LiveActivityBanner.astro';
 import { getCollection } from 'astro:content';
 import { aggregateByCategory } from '@/data/scan';
 import { DEFAULT_CONFIG } from '@/data/config';
+import { getActivity } from '@/data/activity';
 import { targetRepoRoot, absFromEntry } from '@/data/paths';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -22,11 +23,21 @@ const entries = await Promise.all(docs.map(async d => {
 }));
 const cats = aggregateByCategory(entries, DEFAULT_CONFIG.categories);
 const iconOf = (n: string) => DEFAULT_CONFIG.categories.find(c => c.name === n)?.icon;
+const activity = await getActivity(root, DEFAULT_CONFIG);
+const repoName = path.basename(root);
+const docsTotal = docs.length;
+const dirtyCount = activity.dirty.length;
 ---
 <DashboardLayout>
-  <section class="banner" id="live-activity"><h2>Live Activity</h2><LiveActivityBanner /></section>
+  <div class="stat" slot="header-stats">
+    <span class="live">LIVE</span>
+    <span>target <b>{repoName}</b></span>
+    <span>docs <b>{docsTotal}</b></span>
+    <span>dirty <b>{dirtyCount}</b></span>
+  </div>
+  <section class="banner" id="live-activity"><LiveActivityBanner /></section>
   <div class="grid">
     <section class="col" id="timeline"><h2>Recent commits</h2><RecentTimeline /></section>
-    <section class="col" id="cards"><h2>Categories</h2>{cats.map(c => <CategoryCard {...c} icon={iconOf(c.category)} />)}</section>
+    <section id="cards">{cats.map(c => <CategoryCard {...c} icon={iconOf(c.category)} />)}</section>
   </div>
 </DashboardLayout>

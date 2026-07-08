@@ -6,16 +6,148 @@ const { title = 'docwatch' } = Astro.props;
   <head>
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width" />
     <title>{title}</title>
-    <style>
-      body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 0 24px 32px; }
-      main { max-width: 1200px; margin: 0 auto; }
-      .banner { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 16px 0; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
-      .col { border: 1px solid #eee; border-radius: 8px; padding: 12px; }
-      h1 { font-size: 20px; margin: 16px 0 8px; }
-      h2 { font-size: 14px; margin: 0 0 8px; color: #555; }
+    <style is:global>
+      :root {
+        --canvas: #f6f8fa;
+        --panel: #ffffff;
+        --line: #d0d7de;
+        --line2: #eaeef2;
+        --fg: #1f2328;
+        --muted: #656d76;
+        --faint: #8c959f;
+        --blue: #0969da;
+        --blue-l: #218bff;
+        --green: #1a7f37;
+        --green-l: #2da44e;
+        --chip: #f6f8fa;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--fg);
+        font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+        padding: 0 0 48px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .mono { font-family: "SF Mono", ui-monospace, monospace; }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      header h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header h1 .logo { color: var(--blue); }
+
+      header .stat {
+        margin-left: auto;
+        display: flex;
+        gap: 18px;
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+      }
+
+      header .stat b {
+        color: var(--fg);
+        font-weight: 600;
+      }
+
+      header .live {
+        color: var(--green);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      header .live::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 0 3px rgba(45, 164, 78, .18);
+      }
+
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      .banner {
+        margin: 20px 0;
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 14px;
+      }
+
+      .card,
+      .col {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px 16px;
+        box-shadow: 0 1px 0 rgba(31, 35, 40, .04);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 16px;
+      }
+
+      h2 {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0 0 14px;
+        color: var(--fg);
+      }
+
+      @media (max-width: 800px) {
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        header .stat {
+          margin-left: 0;
+          flex-wrap: wrap;
+          gap: 10px 14px;
+        }
+
+        .banner,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
-  <body><main><h1>docwatch</h1><slot /></main></body>
+  <body>
+    <header>
+      <h1><span class="logo">◉</span> docwatch</h1>
+      <slot name="header-stats" />
+    </header>
+    <main><slot /></main>
+  </body>
 </html>

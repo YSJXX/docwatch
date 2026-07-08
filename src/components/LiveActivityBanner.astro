@@ -5,10 +5,72 @@ import { targetRepoRoot } from '@/data/paths';
 const initial: Activity = await getActivity(targetRepoRoot(), DEFAULT_CONFIG);
 ---
 <div id="lab-root" data-initial={JSON.stringify(initial)}>
-  <div><strong>Dirty</strong><ul id="lab-dirty" style="margin:4px 0 0 16px;"></ul></div>
-  <div style="margin-top:8px;"><strong>Recently modified (5m)</strong><ul id="lab-recent" style="margin:4px 0 0 16px;"></ul></div>
-  <div id="lab-plan" style="margin-top:8px;"></div>
+  <div class="card">
+    <h2>Dirty files <span class="n">{initial.dirty.length}</span></h2>
+    <ul id="lab-dirty"></ul>
+  </div>
+  <div class="card">
+    <h2>Recently modified</h2>
+    <ul id="lab-recent"></ul>
+  </div>
+  <div class="card">
+    <h2>Active plan</h2>
+    <div id="lab-plan"></div>
+  </div>
 </div>
+<style>
+  #lab-root { display: contents; }
+
+  h2 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  h2 .n {
+    margin-left: auto;
+    font-size: 11px;
+    background: var(--chip);
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 1px 8px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 7px 0;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  li code {
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 20px;
+    background: rgba(9, 105, 218, .10);
+    color: var(--blue);
+  }
+
+  #lab-plan {
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
 <script>
   const root = document.getElementById('lab-root');
   function esc(value) {

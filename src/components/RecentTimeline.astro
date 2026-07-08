@@ -6,15 +6,82 @@ const groups = new Map<string, Commit[]>();
 for (const c of commits) { const l = groups.get(c.relTime) ?? []; l.push(c); groups.set(c.relTime, l); }
 ---
 <div>
-  {commits.length === 0 && <p style="color:#888">No commits yet, or this is not a git repository.</p>}
+  {commits.length === 0 && <p class="empty">No commits yet, or this is not a git repository.</p>}
   {[...groups.entries()].map(([label, list]) => (
     <div>
-      <div style="font-weight:600;margin-top:8px;">{label}</div>
-      <ul style="margin:4px 0 0 16px;padding:0;">
+      <div class="day">{label}</div>
+      <ul>
         {list.map(c => (
-          <li><code>{c.sha.slice(0, 7)}</code> {c.subject}{c.files[0] && <span style="color:#888"> · {c.files[0]}</span>}</li>
+          <li class="commit">
+            <code class="sha">{c.sha.slice(0, 7)}</code>
+            <span class="msg">{c.subject}</span>
+            {c.files[0] && <span class="file">{c.files[0]}</span>}
+          </li>
         ))}
       </ul>
     </div>
   ))}
 </div>
+
+<style>
+  .empty {
+    color: var(--faint);
+    font-size: 13px;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .day {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 16px 0 8px;
+  }
+
+  .day:first-of-type { margin-top: 0; }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .commit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin: 2px 0;
+    font-size: 13px;
+  }
+
+  .commit:hover { background: var(--canvas); }
+
+  .sha {
+    background: var(--chip);
+    color: var(--blue);
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 400;
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+
+  .msg {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file {
+    color: var(--faint);
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 11px;
+  }
+</style>

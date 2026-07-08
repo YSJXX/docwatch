@@ -1,13 +1,88 @@
 ---
 const { category, docCount, checked, total, percent, icon } = Astro.props;
+const rounded = Math.round(percent);
+const tone = rounded === 100 ? 'hi' : rounded > 0 ? 'mid' : 'lo';
+const width = rounded === 0 ? 2 : rounded;
 ---
-<div style="border:1px solid #eee;border-radius:6px;padding:10px;margin:8px 0;">
-  <div style="display:flex;justify-content:space-between;">
-    <strong>{icon ?? '📄'} {category}</strong>
-    <span style="color:#555">{Math.round(percent)}% · {docCount} docs</span>
+<div class="catcard">
+  <div class="top">
+    <strong class="name">{icon ?? '📄'} {category}</strong>
+    <span class={`pct ${tone}`}>{rounded}%</span>
   </div>
-  <div style="background:#eee;height:6px;border-radius:3px;overflow:hidden;margin-top:6px;">
-    <div style={`background:#4b7;height:100%;width:${Math.round(percent)}%`}></div>
+  <div class="bar"><i class={tone} style={`width:${width}%`}></i></div>
+  <div class="meta">
+    <span>{docCount} {docCount === 1 ? 'doc' : 'docs'}</span>
+    <span>{checked}/{total} checkboxes</span>
   </div>
-  <div style="color:#888;font-size:12px;margin-top:4px;">{checked}/{total} checkboxes</div>
 </div>
+
+<style is:global>
+  .catcard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 0 rgba(31, 35, 40, .04);
+  }
+
+  .catcard:last-child { margin-bottom: 0; }
+
+  .catcard .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 9px;
+  }
+
+  .catcard .name {
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .catcard .pct {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .catcard .pct.hi { color: var(--green); }
+  .catcard .pct.mid { color: var(--blue); }
+  .catcard .pct.lo { color: var(--faint); }
+
+  .catcard .bar {
+    height: 14px;
+    border-radius: 3px;
+    background: var(--line2);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(31, 35, 40, .08);
+  }
+
+  .catcard .bar > i {
+    display: block;
+    height: 100%;
+  }
+
+  .catcard .bar > i.hi {
+    background: repeating-linear-gradient(90deg, var(--green-l) 0 7px, var(--green) 7px 9px);
+  }
+
+  .catcard .bar > i.mid {
+    background: repeating-linear-gradient(90deg, var(--blue-l) 0 7px, var(--blue) 7px 9px);
+  }
+
+  .catcard .bar > i.lo { background: #c4ccd4; }
+
+  .catcard .meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--faint);
+    margin-top: 8px;
+  }
+</style>
