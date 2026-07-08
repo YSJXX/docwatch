@@ -1,0 +1,161 @@
+---
+import CockpitLayout from '@/layouts/CockpitLayout.astro';
+import { getCollection } from 'astro:content';
+import { DEFAULT_CONFIG } from '@/data/config';
+import { getActivity } from '@/data/activity';
+import { resolveCategory } from '@/data/categories';
+import { aggregateByCategory, scanGitLog } from '@/data/scan';
+import { absFromEntry, idToSourceRel, targetRepoRoot } from '@/data/paths';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+export const prerender = false;
+
+const root = targetRepoRoot();
+const astroRoot = path.resolve(new URL('../..', import.meta.url).pathname);
+const docs = await getCollection('docs');
+const docsTotal = docs.length;
+const activity = await getActivity(root, DEFAULT_CONFIG);
+const dirtyCount = activity.dirty.length;
+const commits = await scanGitLog(root, 20).catch(() => []);
+const repoName = path.basename(root);
+const includeRoots = [...new Set(DEFAULT_CONFIG.include.map(pattern => pattern.split('/')[0]))];
+
+function sourceRelFromEntry(entry: (typeof docs)[number]): string | null {
+  const filePath = (entry as any).filePath as string | undefined;
+  if (filePath) {
+    const abs = absFromEntry(filePath, astroRoot);
+    return path.relative(root, abs).split(path.sep).join('/');
+  }
+  return idToSourceRel(entry.id, includeRoots);
+}
+
+const docSources = docs.map(entry => ({
+  id: entry.id,
+  sourceRelPath: sourceRelFromEntry(entry),
+}));
+
+const entries = await Promise.all(docSources.map(async entry => ({
+  sourceRelPath: entry.sourceRelPath ?? entry.id,
+  content: entry.sourceRelPath
+    ? await fs.readFile(path.join(root, entry.sourceRelPath), 'utf8').catch(() => '')
+    : '',
+})));
+const cats = aggregateByCategory(entries, DEFAULT_CONFIG.categories);
+const iconOf = (name: string) => DEFAULT_CONFIG.categories.find(c => c.name === name)?.icon ?? '📄';
+const firstDocByCategory = new Map<string, string>();
+
+for (const doc of docSources) {
+  if (!doc.sourceRelPath) continue;
+  const category = resolveCategory(doc.sourceRelPath, DEFAULT_CONFIG.categories);
+  if (!firstDocByCategory.has(category)) firstDocByCategory.set(category, doc.id);
+}
+
+const commitsByDay = commits.reduce<Array<{ day: string; commits: typeof commits }>>((groups, commit) => {
+  const day = commit.relTime;
+  const last = groups[groups.length - 1];
+  if (last?.day === day) last.commits.push(commit);
+  else groups.push({ day, commits: [commit] });
+  return groups;
+}, []);
+---
+<CockpitLayout repoName={repoName} docsTotal={docsTotal} dirtyCount={dirtyCount}>
+  <aside class="rail" id="cockpit-rail">
+    <section class="sect">
+      <div class="h">Dirty <span class="n">{dirtyCount}</span></div>
+      {activity.dirty.length ? activity.dirty.map(entry => (
+        <div class="item">
+          <span class="badge">{entry.status}</span>
+          <span class="t mono">{entry.path}</span>
+        </div>
+      )) : <div class="empty">No dirty files</div>}
+    </section>
+
+    <section class="sect">
+      <div class="h">Recent commits <span class="n">{commits.length}</span></div>
+      {commitsByDay.length ? commitsByDay.map(group => (
+        <>
+          <div class="day">{group.day}</div>
+          {group.commits.map(commit => (
+            <div class="item">
+              <span class="sha">{commit.sha.slice(0, 7)}</span>
+              <span class="msg">{commit.subject}</span>
+            </div>
+          ))}
+        </>
+      )) : <div class="empty">No recent commits</div>}
+    </section>
+
+    <section class="sect">
+      <div class="h">Categories <span class="n">{cats.length}</span></div>
+      {cats.map(cat => {
+        const rounded = Math.round(cat.percent);
+        const tone = rounded === 100 ? 'hi' : rounded > 0 ? 'mid' : 'lo';
+        const width = rounded === 0 ? 2 : rounded;
+        const firstDocId = firstDocByCategory.get(cat.category);
+        const attrs = firstDocId
+          ? { 'data-preview': `/preview/${firstDocId}`, role: 'button', tabindex: '0' }
+          : {};
+
+        return (
+          <div class="catrow" {...attrs}>
+            <div class="top">
+              <span class="nm">{iconOf(cat.category)} {cat.category}</span>
+              <span class={`pct ${tone}`}>{rounded}%</span>
+            </div>
+            <div class="bar"><i class={tone} style={`width:${width}%`}></i></div>
+          </div>
+        );
+      })}
+    </section>
+  </aside>
+
+  <main class="preview-pane">
+    <iframe id="doc-frame" title="document preview" style="width:100%;height:100%;border:0"></iframe>
+    <div id="empty-state">Select a document to preview</div>
+  </main>
+
+  <script>
+    const frame = document.getElementById('doc-frame');
+    const emptyState = document.getElementById('empty-state');
+
+    function openPreview(target) {
+      if (!(target instanceof HTMLElement)) return;
+      const url = target.dataset.preview;
+      if (!url || !(frame instanceof HTMLIFrameElement) || !emptyState) return;
+
+      frame.src = url;
+      emptyState.hidden = true;
+      document.querySelectorAll('[data-preview].sel').forEach(el => el.classList.remove('sel'));
+      target.classList.add('sel');
+      history.replaceState(null, '', '?doc=' + encodeURIComponent(url));
+    }
+
+    document.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target.closest('[data-preview]') : null;
+      openPreview(target);
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const target = event.target instanceof Element ? event.target.closest('[data-preview]') : null;
+      if (!target) return;
+      event.preventDefault();
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-preview]').forEach(el => {
+        if (el instanceof HTMLElement && !el.hasAttribute('tabindex')) el.tabIndex = 0;
+      });
+      const doc = new URLSearchParams(location.search).get('doc');
+      if (!doc) return;
+      const match = document.querySelector(`[data-preview="${CSS.escape(doc)}"]`);
+      if (match instanceof HTMLElement) openPreview(match);
+      else if (frame instanceof HTMLIFrameElement && emptyState) {
+        frame.src = doc;
+        emptyState.hidden = true;
+      }
+    });
+  </script>
+</CockpitLayout>

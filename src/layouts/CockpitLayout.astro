@@ -1,0 +1,326 @@
+---
+const { title = 'docwatch cockpit', repoName, docsTotal, dirtyCount } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+    <style is:global>
+      :root {
+        --canvas: #f6f8fa;
+        --panel: #ffffff;
+        --line: #d0d7de;
+        --line2: #eaeef2;
+        --fg: #1f2328;
+        --muted: #656d76;
+        --faint: #8c959f;
+        --blue: #0969da;
+        --blue-l: #218bff;
+        --green: #1a7f37;
+        --green-l: #2da44e;
+        --chip: #f6f8fa;
+        --sel: #ddf4ff;
+        --sel-line: #54aeff;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body { height: 100%; }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--fg);
+        font: 13.5px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .mono { font-family: "SF Mono", ui-monospace, monospace; }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        flex: 0 0 auto;
+      }
+
+      header h1 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header h1 .logo { color: var(--blue); }
+
+      header .stat {
+        margin-left: auto;
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+      }
+
+      header .stat b {
+        color: var(--fg);
+        font-weight: 600;
+      }
+
+      header .live {
+        color: var(--green);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      header .live::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 0 3px rgba(45, 164, 78, .18);
+      }
+
+      .cockpit {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .rail {
+        border-right: 1px solid var(--line);
+        overflow-y: auto;
+        padding: 14px;
+        background: var(--canvas);
+      }
+
+      .sect { margin-bottom: 16px; }
+
+      .sect > .h {
+        font-size: 10px;
+        letter-spacing: .7px;
+        text-transform: uppercase;
+        color: var(--faint);
+        font-weight: 600;
+        margin: 0 0 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .sect > .h .n {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 0 7px;
+        color: var(--muted);
+      }
+
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 12.5px;
+      }
+
+      .item .badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 20px;
+        font-family: "SF Mono", ui-monospace, monospace;
+        background: rgba(9, 105, 218, .10);
+        color: var(--blue);
+      }
+
+      .item .t {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .item .sha {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        color: var(--blue);
+        font-size: 10.5px;
+        padding: 1px 6px;
+        border-radius: 5px;
+        font-family: "SF Mono", ui-monospace, monospace;
+      }
+
+      .item .msg {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .day {
+        font-size: 10px;
+        color: var(--faint);
+        margin: 10px 0 4px;
+        font-weight: 600;
+      }
+
+      .catrow {
+        padding: 8px;
+        border-radius: 6px;
+      }
+
+      [data-preview] {
+        cursor: pointer;
+      }
+
+      [data-preview]:hover,
+      [data-preview]:focus-visible {
+        background: var(--line2);
+        outline: none;
+      }
+
+      [data-preview].sel {
+        background: var(--sel);
+        box-shadow: inset 0 0 0 1px var(--sel-line);
+      }
+
+      .catrow .top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      .catrow .nm {
+        font-weight: 600;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .pct {
+        flex: 0 0 auto;
+        font-weight: 700;
+      }
+
+      .pct.hi { color: var(--green); }
+      .pct.mid { color: var(--blue); }
+      .pct.lo { color: var(--faint); }
+
+      .bar {
+        height: 9px;
+        border-radius: 3px;
+        background: var(--line2);
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+
+      .bar > i {
+        display: block;
+        height: 100%;
+      }
+
+      .bar > i.hi {
+        background: repeating-linear-gradient(90deg, var(--green-l) 0 6px, var(--green) 6px 8px);
+      }
+
+      .bar > i.mid {
+        background: repeating-linear-gradient(90deg, var(--blue-l) 0 6px, var(--blue) 6px 8px);
+      }
+
+      .bar > i.lo { background: #c4ccd4; }
+
+      .empty {
+        color: var(--faint);
+        font-style: italic;
+        font-size: 12px;
+        padding: 2px 8px;
+      }
+
+      .preview-pane {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        background: var(--panel);
+      }
+
+      #doc-frame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      #empty-state {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: var(--faint);
+        background: var(--panel);
+        font-size: 14px;
+        pointer-events: none;
+      }
+
+      #empty-state[hidden] { display: none; }
+
+      @media (max-width: 900px) {
+        body { overflow: auto; }
+
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        header .stat {
+          margin-left: 0;
+          flex-wrap: wrap;
+          gap: 10px 14px;
+        }
+
+        .cockpit {
+          grid-template-columns: 1fr;
+          min-height: 900px;
+        }
+
+        .rail {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+          max-height: 420px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1><span class="logo">◉</span> docwatch</h1>
+      <div class="stat">
+        <span class="live">LIVE</span>
+        <span>target <b>{repoName}</b></span>
+        <span>docs <b>{docsTotal}</b></span>
+        <span>dirty <b>{dirtyCount}</b></span>
+      </div>
+    </header>
+    <div class="cockpit"><slot /></div>
+  </body>
+</html>
