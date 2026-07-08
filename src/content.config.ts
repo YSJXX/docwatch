@@ -12,51 +12,66 @@ const docs = defineCollection({
     pattern: DEFAULT_CONFIG.include,
   }),
   schema: z.object({
-    title: z.string().optional(),
-    description: z.string().optional(),
-    editUrl: z.union([z.string().url(), z.boolean()]).optional().default(true),
+    title: z.string().optional().catch(undefined),
+    description: z.string().optional().catch(undefined),
+    editUrl: z.union([z.string().url(), z.boolean()]).optional().default(true).catch(true),
     head: z
       .array(
         z.object({
-          tag: z.enum(['title', 'base', 'link', 'style', 'meta', 'script', 'noscript', 'template']),
-          attrs: z.record(z.union([z.string(), z.boolean(), z.undefined()])).default({}),
-          content: z.string().default(''),
+          tag: z
+            .enum(['title', 'base', 'link', 'style', 'meta', 'script', 'noscript', 'template'])
+            .catch('meta'),
+          attrs: z.record(z.union([z.string(), z.boolean(), z.undefined()])).default({}).catch({}),
+          content: z.string().default('').catch(''),
         }),
       )
-      .default([]),
+      .default([])
+      .catch([]),
     tableOfContents: z.unknown().optional(),
-    template: z.enum(['doc', 'splash']).default('doc'),
+    template: z.enum(['doc', 'splash']).default('doc').catch('doc'),
     hero: z.unknown().optional(),
-    lastUpdated: z.union([z.date(), z.boolean()]).optional(),
+    lastUpdated: z.union([z.date(), z.boolean()]).optional().catch(undefined),
     prev: z
-      .union([z.boolean(), z.string(), z.object({ link: z.string().optional(), label: z.string().optional() }).strict()])
-      .optional(),
+      .union([
+        z.boolean(),
+        z.string(),
+        z.object({ link: z.string().optional().catch(undefined), label: z.string().optional().catch(undefined) }),
+      ])
+      .optional()
+      .catch(undefined),
     next: z
-      .union([z.boolean(), z.string(), z.object({ link: z.string().optional(), label: z.string().optional() }).strict()])
-      .optional(),
+      .union([
+        z.boolean(),
+        z.string(),
+        z.object({ link: z.string().optional().catch(undefined), label: z.string().optional().catch(undefined) }),
+      ])
+      .optional()
+      .catch(undefined),
     sidebar: z
       .object({
-        order: z.number().optional(),
-        label: z.string().optional(),
-        hidden: z.boolean().default(false),
+        order: z.number().optional().catch(undefined),
+        label: z.string().optional().catch(undefined),
+        hidden: z.coerce.boolean().default(false).catch(false),
         badge: z
           .union([
             z.string(),
             z.object({
-              variant: z.enum(['note', 'danger', 'success', 'caution', 'tip', 'default']).default('default'),
-              text: z.string(),
+              variant: z.enum(['note', 'danger', 'success', 'caution', 'tip', 'default']).default('default').catch('default'),
+              text: z.string().catch(''),
             }),
           ])
-          .optional(),
-        attrs: z.record(z.union([z.string(), z.number(), z.boolean(), z.undefined()])).default({}),
+          .optional()
+          .catch(undefined),
+        attrs: z.record(z.union([z.string(), z.number(), z.boolean(), z.undefined()])).default({}).catch({}),
       })
-      .default({}),
-    banner: z.object({ content: z.string() }).optional(),
-    pagefind: z.boolean().default(true),
-    draft: z.boolean().default(false),
-    status: z.enum(['draft', 'in-progress', 'done']).optional(),
-    category: z.string().optional(),
-    tags: z.array(z.string()).optional(),
+      .default({})
+      .catch({ hidden: false, attrs: {} }),
+    banner: z.object({ content: z.string().catch('') }).optional().catch(undefined),
+    pagefind: z.coerce.boolean().default(true).catch(true),
+    draft: z.coerce.boolean().default(false).catch(false),
+    status: z.string().optional().catch(undefined),
+    category: z.string().optional().catch(undefined),
+    tags: z.preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()).catch([])).optional().catch([]),
   }),
 });
 

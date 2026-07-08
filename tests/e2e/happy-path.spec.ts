@@ -11,3 +11,9 @@ test('root redirects to /dashboard', async ({ page }) => {
   await page.goto('/');
   expect(page.url()).toContain('/dashboard');
 });
+
+test('hostile frontmatter document renders', async ({ page }) => {
+  const response = await page.goto('/docs/hostile');
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole('heading', { name: 'Hostile' }).first()).toBeVisible();
+});

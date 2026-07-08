@@ -7,4 +7,15 @@ git config user.email test@example.com && git config user.name test
 echo "# root" > README.md;                       git add . && git commit -q -m "chore: init"
 echo "# ADR-001" > docs/adr/ADR-001.md;          git add . && git commit -q -m "docs: add ADR-001"
 printf -- "- [x] foo\n" > docs/adr/ADR-002.md;   git add . && git commit -q -m "docs: add ADR-002"
+cat > docs/hostile.md <<'EOF'
+---
+title: Hostile
+status: Accepted
+draft: yes
+tags: single-string-not-array
+pagefind: "true"
+---
+# Hostile
+- [ ] survive
+EOF
 echo "# uncommitted" > NOTES.md   # dirty로 남김
