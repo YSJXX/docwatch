@@ -368,7 +368,7 @@ void esc;
     .plan-tab.active { background: var(--md-sys-color-secondary-container); border-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
     .plan-items { display: flex; flex-direction: column; gap: 8px; }
     .plan-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; background: var(--md-sys-color-surface-container); }
-    .plan-box { flex: none; width: 22px; height: 22px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; transition: all .15s; background: transparent; border: 2px solid var(--md-sys-color-outline); color: transparent; }
+    .plan-box { flex: none; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: transparent; border: 2px solid var(--md-sys-color-outline); color: transparent; }
     .plan-row.done .plan-box { background: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
     .plan-text { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; color: var(--md-sys-color-on-surface); }
     .plan-row.done .plan-text { color: var(--md-sys-color-on-surface-variant); }
@@ -491,10 +491,7 @@ void esc;
         const rows = el('div', 'plan-items');
         visible.forEach(item => {
           const row = el('div', `plan-row ${item.done ? 'done' : ''}`);
-          const box = el('button', 'plan-box', item.done ? '✓' : '');
-          box.type = 'button';
-          box.title = '표시 전용 · 파일 미저장';
-          box.addEventListener('click', () => { item.done = !item.done; draw(); });
+          const box = el('span', 'plan-box', item.done ? '✓' : '');
           row.append(box, el('span', 'plan-text', item.text), el('span', 'plan-tag', item.done ? '완료' : '예정'));
           rows.append(row);
         });
