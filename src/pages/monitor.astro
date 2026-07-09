@@ -8,6 +8,7 @@ import { scanCheckboxes, scanGitLog } from '@/data/scan';
 import { scanDiff, type DiffLine } from '@/data/diff';
 import { buildDocIndex, fileToDocId, targetRepoRoot } from '@/data/paths';
 import { scanWatchedFiles } from '@/data/watch-files';
+import { scanTodos, type TodoItem } from '@/data/todos';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -277,6 +278,15 @@ const checklists = docSources
 const checklistTotal = checklists.reduce((n, c) => n + c.total, 0);
 const checklistDone = checklists.reduce((n, c) => n + c.done, 0);
 
+const todos = await scanTodos(root, DEFAULT_CONFIG);
+const todoGroups = [...todos.reduce((m, t) => {
+  const g = m.get(t.file) ?? [];
+  g.push(t);
+  m.set(t.file, g);
+  return m;
+}, new Map<string, TodoItem[]>())].map(([file, items]) => ({ file, items }));
+const todoTotal = todos.length;
+
 const clientDetails: Record<string, Detail> = {};
 for (const [id, d] of Object.entries(details)) clientDetails[`/preview/${id}`] = d;
 for (const w of watchedDetails) clientDetails[w.preview] = w.detail;
@@ -344,6 +354,25 @@ void esc;
         </div>
       )) : <div class="empty-state compact">체크리스트가 없습니다.</div>}
     </div>
+
+    <div class="section-head todo-head">
+      <div><span>🔧</span><b>코드 TODO</b></div>
+      <span class="count">{todoTotal}</span>
+    </div>
+    <div class="todo-list" id="todo-list">
+      {todoGroups.length ? todoGroups.map(g => (
+        <div class="todo-group">
+          <div class="todo-file mono" title={g.file}>{g.file}</div>
+          {g.items.map(item => (
+            <div class="todo-item">
+              <span class={`todo-tag ${item.tag.toLowerCase()}`}>{item.tag}</span>
+              <span class="todo-text">{item.text || '(설명 없음)'}</span>
+              <span class="todo-line">:{item.line}</span>
+            </div>
+          ))}
+        </div>
+      )) : <div class="empty-state compact">코드 TODO가 없습니다.</div>}
+    </div>
   </section>
 
   <section class="monitor-col col-two">
@@ -369,8 +398,8 @@ void esc;
     .section-head b { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--md-sys-color-on-surface); }
     .section-head .count { font-family: var(--md-sys-typescale-mono-font); font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
     .tree-head { border-top: 1px solid var(--md-sys-color-outline-variant); }
-    .timeline-list { flex: 1 1 30%; min-height: 90px; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; }
-    .tree-list { flex: 1 1 30%; min-height: 90px; overflow-y: auto; padding: 6px 8px; }
+    .timeline-list { flex: 1 1 25%; min-height: 80px; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .tree-list { flex: 1 1 25%; min-height: 80px; overflow-y: auto; padding: 6px 8px; }
     .timeline-row { padding: 5px 9px; border-radius: 5px; border: 1px solid transparent; background: transparent; transition: background .15s, border-color .15s; }
     .timeline-row.fresh { animation: dashSlideIn .55s ease; }
     .row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -423,7 +452,7 @@ void esc;
     #doc-frame { width: 100%; height: 100%; border: 0; background: #fff; }
     #doc-frame[hidden] { display: none; }
     .cl-head { border-top: 1px solid var(--md-sys-color-outline-variant); }
-    .checklist-list { flex: 1 1 40%; min-height: 90px; overflow-y: auto; padding: 6px 8px; }
+    .checklist-list { flex: 1 1 25%; min-height: 80px; overflow-y: auto; padding: 6px 8px; }
     .cl-group { margin-bottom: 10px; }
     .cl-doc { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; min-width: 0; }
     .cl-doc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--md-sys-typescale-mono-font); font-size: 11.5px; font-weight: 600; color: var(--md-sys-color-on-surface); }
@@ -433,6 +462,17 @@ void esc;
     .cl-item.done .cl-box { background: var(--dw-green-dot); border-color: var(--dw-green-dot); color: #fff; }
     .cl-text { flex: 1; min-width: 0; color: var(--md-sys-color-on-surface); word-break: break-word; }
     .cl-item.done .cl-text { color: var(--md-sys-color-on-surface-variant); text-decoration: line-through; }
+    .todo-head { border-top: 1px solid var(--md-sys-color-outline-variant); }
+    .todo-list { flex: 1 1 25%; min-height: 80px; overflow-y: auto; padding: 6px 8px; }
+    .todo-group { margin-bottom: 10px; }
+    .todo-file { padding: 4px 8px; font-family: var(--md-sys-typescale-mono-font); font-size: 11px; font-weight: 600; color: var(--md-sys-color-on-surface-variant); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .todo-item { display: flex; align-items: baseline; gap: 6px; padding: 2px 8px 2px 14px; font-size: 11.5px; line-height: 1.45; }
+    .todo-tag { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 8.5px; font-weight: 700; letter-spacing: .3px; padding: 1px 5px; border-radius: 4px; }
+    .todo-tag.todo { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+    .todo-tag.fixme { background: var(--dw-orange-bg); color: var(--dw-orange); }
+    .todo-tag.hack, .todo-tag.xxx { background: var(--dw-red-bg); color: var(--dw-red); }
+    .todo-text { flex: 1; min-width: 0; color: var(--md-sys-color-on-surface); word-break: break-word; }
+    .todo-line { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 10px; color: var(--md-sys-color-on-surface-variant); }
     @media (max-width: 900px) {
       .monitor-col { min-height: 70vh; border-right: 0; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
       .col-one, .col-two, .col-three { flex: none; }
