@@ -587,10 +587,7 @@ void esc;
       return null;
     }
 
-    async function pollLive() {
-      const res = await fetch('/api/activity.json', { cache: 'no-store' });
-      if (!res.ok) return;
-      const data = await res.json();
+    function applyActivity(data) {
       let nextNew = 0, nextMod = 0;
       const byRel = new Map();
 
@@ -633,10 +630,26 @@ void esc;
       if (statMod) statMod.textContent = String(nextMod);
     }
 
+    async function pollLive() {
+      try {
+        const res = await fetch('/api/activity.json', { cache: 'no-store' });
+        if (res.ok) applyActivity(await res.json());
+      } catch {}
+    }
+
+    let stream = null;
     function setLivePolling(live) {
       window.clearInterval(poll);
       poll = 0;
-      if (live) poll = window.setInterval(() => { pollLive().catch(() => {}); }, 5000);
+      if (stream) { stream.close(); stream = null; }
+      if (!live) return;
+      if (typeof EventSource !== 'undefined') {
+        // Server pushes activity on file changes; EventSource auto-reconnects on drop.
+        stream = new EventSource('/api/activity-stream');
+        stream.onmessage = event => { try { applyActivity(JSON.parse(event.data)); } catch {} };
+      } else {
+        poll = window.setInterval(() => { pollLive().catch(() => {}); }, 5000);
+      }
     }
 
     document.addEventListener('dw:live-toggle', event => {
