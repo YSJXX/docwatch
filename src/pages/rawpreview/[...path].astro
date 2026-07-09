@@ -1,0 +1,104 @@
+---
+import { Code } from 'astro:components';
+import { DEFAULT_CONFIG } from '@/data/config';
+import { targetRepoRoot } from '@/data/paths';
+import { scanWatchedFiles, isWatchedRel } from '@/data/watch-files';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+export const prerender = false;
+
+function esc(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function langOf(rel: string): string {
+  const base = path.posix.basename(rel).toLowerCase();
+  if (base === 'dockerfile') return 'dockerfile';
+  if (base === 'go.mod' || base === 'go.sum') return 'text';
+  const ext = path.posix.extname(base);
+  const map: Record<string, string> = {
+    '.json': 'json', '.toml': 'toml', '.yml': 'yaml', '.yaml': 'yaml',
+    '.ts': 'typescript', '.mts': 'typescript', '.cts': 'typescript',
+    '.js': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript',
+    '.md': 'markdown', '.txt': 'text',
+  };
+  return map[ext] ?? 'text';
+}
+
+/** Reject empty, absolute, or path-traversal inputs before any filesystem access. */
+function safeRel(rel: string): boolean {
+  if (!rel || path.isAbsolute(rel)) return false;
+  const norm = path.posix.normalize(rel.replace(/\\/g, '/'));
+  return !(norm === '..' || norm.startsWith('../') || norm.includes('/../'));
+}
+
+const rel = Astro.params.path ?? '';
+const root = targetRepoRoot();
+
+let content: string | null = null;
+if (safeRel(rel)) {
+  const watched = await scanWatchedFiles(root, DEFAULT_CONFIG);
+  if (isWatchedRel(rel, watched)) {
+    const abs = path.resolve(root, rel);
+    // defense-in-depth: the resolved path must stay inside the target root
+    if (abs === root || abs.startsWith(root + path.sep)) {
+      content = await fs.readFile(abs, 'utf8').catch(() => null);
+    }
+  }
+}
+
+if (content === null) {
+  return new Response(
+    `<!doctype html><html lang="en"><body>File not available: ${esc(rel)}</body></html>`,
+    { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } },
+  );
+}
+
+const normalized = content.replace(/\r\n/g, '\n');
+const allLines = normalized.split('\n');
+const truncated = allLines.length > 2000;
+const code = truncated ? allLines.slice(0, 2000).join('\n') : normalized;
+const lang = langOf(rel);
+const crumb = rel.split('/').filter(Boolean);
+const crumbLast = crumb.at(-1);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{crumbLast ?? rel}</title>
+    <style is:global>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #fff; color: #1f2328; font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      .crumb { padding: 18px 26px 0; color: #8c959f; font-size: 12px; word-break: break-word; }
+      .crumb b { color: #1f2328; }
+      .kind { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 600; letter-spacing: .4px; padding: 1px 6px; border-radius: 4px; background: rgba(9,105,218,.10); color: #0969da; vertical-align: 1px; }
+      .rawdoc { padding: 14px 26px 60px; }
+      .rawdoc :global(pre) { margin: 0; padding: 16px; border: 1px solid #d0d7de; border-radius: 6px; overflow: auto; font-size: 12.5px; line-height: 1.6; font-family: "SF Mono", ui-monospace, Consolas, "Liberation Mono", monospace; }
+      .trunc { margin: 12px 0 0; color: #8c959f; font-size: 12px; font-style: italic; }
+    </style>
+  </head>
+  <body>
+    <div class="crumb" aria-label="File path">
+      {crumb.map((part, index) => (
+        <>
+          {index > 0 && ' / '}
+          {index === crumb.length - 1 ? <b>{part}</b> : part}
+        </>
+      ))}
+      <span class="kind">CONFIG</span>
+    </div>
+    <article class="rawdoc">
+      <Code code={code} lang={lang as any} theme="github-light" />
+      {truncated && <p class="trunc">… 파일이 길어 처음 2000줄만 표시합니다.</p>}
+    </article>
+  </body>
+</html>
