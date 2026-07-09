@@ -18,4 +18,5 @@ pagefind: "true"
 # Hostile
 - [ ] survive
 EOF
+printf '{\n  "name": "sample-repo",\n  "version": "0.0.0",\n  "private": true\n}\n' > package.json  # dirty NEW watched config file
 echo "# uncommitted" > NOTES.md   # dirty로 남김

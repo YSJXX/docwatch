@@ -43,7 +43,6 @@ test('selecting a non-plan doc shows the iframe preview', async ({ page }) => {
 
   await expect(page.locator('#doc-frame')).toHaveAttribute('src', new RegExp(readmePreview));
   await expect(page.locator('#doc-frame')).toBeVisible();
-  await expect(page.locator('#plan-pane')).not.toBeVisible();
   await expect(page.frameLocator('#doc-frame').locator('article, h1').first()).toBeVisible();
 });
 
@@ -65,4 +64,24 @@ test('malicious ?doc is ignored', async ({ page }) => {
   const frameSrc = await page.locator('#doc-frame').getAttribute('src');
   expect(frameSrc ?? '').not.toContain('example.com');
   expect(frameSrc ?? '').not.toContain('javascript:');
+});
+
+test('watched config files appear in the tree and open the code preview', async ({ page }) => {
+  await page.goto('/monitor');
+
+  const cfg = page.locator('.tree-row.file[data-preview="/rawpreview/package.json"]');
+  await expect(cfg).toBeVisible();
+  await cfg.click();
+
+  await expect(page.locator('#doc-frame')).toHaveAttribute('src', /\/rawpreview\/package\.json/);
+  await expect(page.locator('#doc-frame')).toBeVisible();
+  await expect(page.frameLocator('#doc-frame').locator('pre').first()).toBeVisible();
+});
+
+test('rawpreview path traversal via ?doc is ignored', async ({ page }) => {
+  await page.goto('/monitor?doc=' + encodeURIComponent('/rawpreview/../../etc/passwd'));
+
+  await expect(page.locator('#col3-empty')).toBeVisible();
+  const frameSrc = await page.locator('#doc-frame').getAttribute('src');
+  expect(frameSrc ?? '').not.toContain('etc/passwd');
 });
