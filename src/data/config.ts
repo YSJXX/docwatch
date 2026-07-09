@@ -1,5 +1,5 @@
 export type CategoryRule = { name: string; match: string | string[]; icon?: string };
-export type DocwatchConfig = { include: string[]; exclude: string[]; categories: CategoryRule[]; watchFiles: string[] };
+export type DocwatchConfig = { include: string[]; exclude: string[]; categories: CategoryRule[]; watchFiles: string[]; todoGlobs: string[] };
 
 export const DEFAULT_CONFIG: DocwatchConfig = {
   include: ['docs/**/*.md', 'AGENTS.md', 'README.md', 'CLAUDE.md', '.omc/**/*.md', '.claude/plans/*.md'],
@@ -16,6 +16,7 @@ export const DEFAULT_CONFIG: DocwatchConfig = {
     'Dockerfile', 'docker-compose.{yml,yaml}',
     '*.config.{js,ts,mjs,cjs}', '.github/workflows/*.{yml,yaml}',
   ],
+  todoGlobs: ['**/*.{ts,tsx,js,jsx,mjs,cjs,astro,vue,svelte,py,go,rs,rb,java,kt,c,h,cpp,cs,php,sh}'],
 };
 
 export function mergeConfig(override: Partial<DocwatchConfig>): DocwatchConfig {
@@ -24,6 +25,7 @@ export function mergeConfig(override: Partial<DocwatchConfig>): DocwatchConfig {
     include: override.include ?? DEFAULT_CONFIG.include,
     exclude: override.exclude ?? DEFAULT_CONFIG.exclude,
     watchFiles: override.watchFiles ?? DEFAULT_CONFIG.watchFiles,
+    todoGlobs: override.todoGlobs ?? DEFAULT_CONFIG.todoGlobs,
     categories: [
       ...DEFAULT_CONFIG.categories.filter(c => !overridden.has(c.name)),
       ...(override.categories ?? []),
