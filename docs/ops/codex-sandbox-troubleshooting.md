@@ -35,14 +35,23 @@ The next Codex `task`/`review` spawns a fresh broker on demand.
 
 ## What actually breaks (two independent problems)
 
-### 1. `apply_patch` (editing existing files) is structurally broken here
-- **CREATE (new file) works.** Codex reliably creates brand-new files via its background `task` path (verified: generated `monitor.astro`, test specs, `src/data/diff.ts`).
-- **EDIT (apply_patch on an existing file) fails**, even with a healthy runtime, with:
-  ```
-  Failed to create unified exec process: No such file or directory (os error 2)
-  ```
-  This is independent of the broker state — it did not recover after the broker fix below. The apply_patch exec layer simply does not work in this container.
-- **Operating rule:** route **new-file generation to Codex**; do **edits of existing files with Claude's own editor**. Don't waste a round-trip sending edits to Codex here.
+### 1. Intermittent write failures = broker degradation, NOT a structural apply_patch limit
+An earlier version of this doc claimed apply_patch (editing existing files) was
+"structurally broken." **That was wrong.** Both create AND edit can fail with:
+```
+Failed to create unified exec process: No such file or directory (os error 2)
+```
+…but this correlates with a **long-lived / degraded shared broker**, not with the
+operation type. Verified 2026-07-09: after a clean reset of a ~2h-old broker, a probe
+**created** a file and then **apply_patch-edited** it — both succeeded (confirmed on disk).
+- Symptom: a broker that's been up a while starts failing writes — create becomes flaky,
+  edit fails with `os error 2`.
+- **Operating rule:** when Codex write/edit tasks start failing, **reset the broker**
+  (see §2: kill its pid + remove `broker.json` + `rm -rf` its sessionDir), then retry. The
+  next task spawns a fresh broker that can create AND edit. Only fall back to Claude's own
+  editor if a reset doesn't help. Don't declare edits "impossible."
+- Caveat: not perfectly deterministic — a freshly spawned broker occasionally still fails
+  one edit, but the capability is real, so reset+retry is the first move.
 
 ### 2. The shared broker can wedge / be orphaned
 - The plugin runs **one shared app-server broker per Claude session**
