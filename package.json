@@ -2,6 +2,28 @@
   "name": "docwatch",
   "version": "0.1.0",
   "description": "Local live doc viewer for Claude Code projects",
+  "license": "MIT",
+  "author": "ysj",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YSJXX/docwatch.git"
+  },
+  "homepage": "https://github.com/YSJXX/docwatch#readme",
+  "bugs": {
+    "url": "https://github.com/YSJXX/docwatch/issues"
+  },
+  "keywords": [
+    "docwatch",
+    "documentation",
+    "dashboard",
+    "claude-code",
+    "agent",
+    "astro",
+    "starlight",
+    "markdown",
+    "live-reload",
+    "docs"
+  ],
   "type": "module",
   "engines": {
     "node": ">=18"
