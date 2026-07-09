@@ -15,6 +15,8 @@ export const DEFAULT_CONFIG: DocwatchConfig = {
     'tsconfig*.json', 'pyproject.toml', 'requirements.txt', 'Cargo.toml', 'go.mod',
     'Dockerfile', 'docker-compose.{yml,yaml}',
     '*.config.{js,ts,mjs,cjs}', '.github/workflows/*.{yml,yaml}',
+    '**/openapi*.{yaml,yml,json}', '**/swagger*.{yaml,yml,json}', '**/*.{graphql,gql,proto,prisma}',
+    '**/*.{mermaid,mmd}', 'docs/**/*.svg',
   ],
   todoGlobs: ['**/*.{ts,tsx,js,jsx,mjs,cjs,astro,vue,svelte,py,go,rs,rb,java,kt,c,h,cpp,cs,php,sh}'],
 };

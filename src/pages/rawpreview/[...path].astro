@@ -1,5 +1,6 @@
 ---
 import { Code } from 'astro:components';
+import Mermaid from '@/components/Mermaid.astro';
 import { DEFAULT_CONFIG } from '@/data/config';
 import { targetRepoRoot } from '@/data/paths';
 import { scanWatchedFiles, isWatchedRel } from '@/data/watch-files';
@@ -27,6 +28,7 @@ function langOf(rel: string): string {
     '.ts': 'typescript', '.mts': 'typescript', '.cts': 'typescript',
     '.js': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript',
     '.md': 'markdown', '.txt': 'text',
+    '.graphql': 'graphql', '.gql': 'graphql',
   };
   return map[ext] ?? 'text';
 }
@@ -60,11 +62,17 @@ if (content === null) {
   );
 }
 
+const ext = path.posix.extname(rel).toLowerCase();
+const mode = ext === '.mmd' || ext === '.mermaid' ? 'mermaid' : ext === '.svg' ? 'svg' : 'code';
+
 const normalized = content.replace(/\r\n/g, '\n');
 const allLines = normalized.split('\n');
-const truncated = allLines.length > 2000;
+const truncated = mode === 'code' && allLines.length > 2000;
 const code = truncated ? allLines.slice(0, 2000).join('\n') : normalized;
 const lang = langOf(rel);
+// <img> data URI: browsers do NOT run scripts in SVGs loaded this way.
+const svgDataUri = mode === 'svg' ? `data:image/svg+xml;base64,${Buffer.from(content).toString('base64')}` : '';
+const badge = mode === 'code' ? 'FILE' : 'DIAGRAM';
 const crumb = rel.split('/').filter(Boolean);
 const crumbLast = crumb.at(-1);
 ---
@@ -83,6 +91,8 @@ const crumbLast = crumb.at(-1);
       .kind { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 600; letter-spacing: .4px; padding: 1px 6px; border-radius: 4px; background: rgba(9,105,218,.10); color: #0969da; vertical-align: 1px; }
       .rawdoc { padding: 14px 26px 60px; }
       .rawdoc :global(pre) { margin: 0; padding: 16px; border: 1px solid #d0d7de; border-radius: 6px; overflow: auto; font-size: 12.5px; line-height: 1.6; font-family: "SF Mono", ui-monospace, Consolas, "Liberation Mono", monospace; }
+      .rawdoc :global(.mermaid-rendered) { margin: 0; padding: 8px; overflow: auto; }
+      .rawdoc :global(.mermaid-rendered svg) { max-width: 100%; height: auto; }
       .trunc { margin: 12px 0 0; color: #8c959f; font-size: 12px; font-style: italic; }
     </style>
   </head>
@@ -94,11 +104,22 @@ const crumbLast = crumb.at(-1);
           {index === crumb.length - 1 ? <b>{part}</b> : part}
         </>
       ))}
-      <span class="kind">CONFIG</span>
+      <span class="kind">{badge}</span>
     </div>
     <article class="rawdoc">
-      <Code code={code} lang={lang as any} theme="github-light" />
-      {truncated && <p class="trunc">… 파일이 길어 처음 2000줄만 표시합니다.</p>}
+      {mode === 'mermaid' ? (
+        <>
+          <pre><code class="language-mermaid" set:text={code}></code></pre>
+          <Mermaid />
+        </>
+      ) : mode === 'svg' ? (
+        <img src={svgDataUri} alt={rel} style="max-width:100%;height:auto" />
+      ) : (
+        <>
+          <Code code={code} lang={lang as any} theme="github-light" />
+          {truncated && <p class="trunc">… 파일이 길어 처음 2000줄만 표시합니다.</p>}
+        </>
+      )}
     </article>
   </body>
 </html>
