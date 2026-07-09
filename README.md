@@ -21,6 +21,17 @@ docwatch turns a target repository into a live Starlight documentation site plus
 
 docwatch is a long-running dev server. It occupies one terminal while it is running.
 
+## Views
+
+Once the server is running, open it in your browser (default `http://localhost:4321`):
+
+| Route | View |
+| --- | --- |
+| `/monitor` | Material 3 three-pane live cockpit: real-time activity timeline + file tree, selected-file detail, and a rendered document preview or plan-checklist tracker. Dark/light toggle. |
+| `/cockpit` | Two-pane cockpit — dashboard rail on the left, document preview on the right. `/` redirects here. |
+| `/dashboard` | Single-page dashboard — live activity, recent commits, and category progress. |
+| `/preview/<id>` | Bare rendered view of a single document. |
+
 ## Supported Conventions
 
 | Convention | Purpose |
@@ -50,16 +61,17 @@ npx docwatch ./my-project --port 5000 --no-open
 
 ## Configuration
 
-Target-repository `docwatch.config.ts` overrides are planned for v0.2 and are not active in v0.1. For reference, v0.1 uses these built-in defaults:
+A target-repository `docwatch.config.ts` override is not yet wired up — docwatch currently uses these built-in defaults:
 
 ```ts
 const defaults = {
   include: ['docs/**/*.md', 'AGENTS.md', 'README.md', 'CLAUDE.md', '.omc/**/*.md', '.claude/plans/*.md'],
-  exclude: ['**/node_modules/**', '.git/**'],
+  exclude: ['**/node_modules/**', '.git/**', '.docwatch-cache/**'],
   categories: [
-    { name: 'ADRs', match: 'docs/adr/**' },
+    { name: 'ADR',   match: 'docs/adr/**' },
+    { name: 'PRD',   match: ['docs/prd*', '.omc/prd-*'] },
     { name: 'Plans', match: '.claude/plans/**' },
-    { name: 'Project root', match: ['AGENTS.md', 'README.md'] },
+    { name: 'Root',  match: ['AGENTS.md', 'README.md', 'CLAUDE.md'] },
   ],
 };
 ```
