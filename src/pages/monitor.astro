@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG } from '@/data/config';
 import { getActivity } from '@/data/activity';
 import { resolveCategory } from '@/data/categories';
 import { scanCheckboxes, scanGitLog } from '@/data/scan';
+import { scanDiff, type DiffLine } from '@/data/diff';
 import { buildDocIndex, fileToDocId, targetRepoRoot } from '@/data/paths';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -23,6 +24,7 @@ type Detail = {
   lines: string;
   excerpt: string;
   plan?: PlanItem[];
+  diff?: DiffLine[];
 };
 type TimelineItem = { id?: string; name: string; dir: string; status: Status; ago: string; preview: string | null; rel: string; mtime: number };
 type TreeNode = { depth: number; isDir: boolean; name: string; id?: string; status?: Status };
@@ -156,6 +158,7 @@ const docSources = await Promise.all(docs.map(async entry => {
   const lines = content ? String(content.replace(/\r\n/g, '\n').split('\n').length) : '0';
   const planStats = scanCheckboxes(content);
   const plan = planStats.total ? parsePlan(content) : undefined;
+  const diff = status === 'MOD' ? await scanDiff(root, rel) : [];
   const name = path.posix.basename(rel);
   const dir = dirOf(rel);
   const detail: Detail = {
@@ -168,6 +171,7 @@ const docSources = await Promise.all(docs.map(async entry => {
     lines,
     excerpt: excerptOf(content),
     ...(plan ? { plan } : {}),
+    ...(diff.length ? { diff } : {}),
   };
   details[entry.id] = detail;
   return { id: entry.id, rel, name, dir, status, mtime: stat?.mtimeMs ?? 0, category: resolveCategory(rel, DEFAULT_CONFIG.categories) };
@@ -334,6 +338,18 @@ void esc;
     .excerpt-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--dw-green); margin-bottom: 10px; }
     .excerpt { border-left: 3px solid var(--dw-green-border); padding: 2px 0 2px 14px; color: var(--md-sys-color-on-surface-variant); font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; }
     .notice { margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; background: var(--dw-orange-bg); color: var(--dw-orange); font-size: 12px; }
+    .diff-stat { display: flex; gap: 14px; margin-bottom: 12px; font-size: 11px; font-family: var(--md-sys-typescale-mono-font); }
+    .diff-add-count { color: var(--dw-green); }
+    .diff-del-count { color: var(--dw-red); }
+    .diff-box { border: 1px solid var(--md-sys-color-outline-variant); border-radius: 5px; overflow: hidden; font-family: var(--md-sys-typescale-mono-font); font-size: 12.5px; line-height: 1.7; }
+    .diff-line { display: flex; }
+    .diff-line.add { background: var(--dw-green-bg); }
+    .diff-line.del { background: var(--dw-red-bg); }
+    .diff-gutter { flex: none; width: 34px; text-align: right; padding: 1px 8px 1px 0; color: var(--md-sys-color-on-surface-variant); opacity: .6; user-select: none; border-right: 1px solid var(--md-sys-color-outline-variant); }
+    .diff-sign { flex: none; width: 20px; text-align: center; }
+    .diff-line.add .diff-sign { color: var(--dw-green); }
+    .diff-line.del .diff-sign { color: var(--dw-red); }
+    .diff-text { white-space: pre-wrap; word-break: break-word; }
     .empty-state { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--md-sys-color-on-surface-variant); font-size: 13px; }
     .empty-state.compact { min-height: 120px; }
     .empty-state[hidden] { display: none; }
@@ -409,11 +425,29 @@ void esc;
         });
         detailPane.append(metas, el('div', 'excerpt-label', '✦ 문서 발췌'), el('div', 'excerpt', detail.excerpt));
       } else if (detail.status === 'MOD') {
-        detailPane.append(
-          el('div', 'notice', '라인 단위 diff는 다음 버전입니다 — 아래는 문서 발췌'),
-          el('div', 'excerpt-label', '✦ 문서 발췌'),
-          el('div', 'excerpt', detail.excerpt),
-        );
+        if (detail.diff && detail.diff.length) {
+          const adds = detail.diff.filter(line => line.t === 'add').length;
+          const dels = detail.diff.filter(line => line.t === 'del').length;
+          const stat = el('div', 'diff-stat');
+          stat.append(el('span', 'diff-add-count', `+${adds} 추가`), el('span', 'diff-del-count', `−${dels} 삭제`));
+          const box = el('div', 'diff-box');
+          detail.diff.forEach((line, i) => {
+            const row = el('div', `diff-line ${line.t}`);
+            row.append(
+              el('span', 'diff-gutter', String(i + 1)),
+              el('span', 'diff-sign', line.t === 'add' ? '+' : line.t === 'del' ? '−' : ' '),
+              el('span', 'diff-text', line.s),
+            );
+            box.append(row);
+          });
+          detailPane.append(stat, box);
+        } else {
+          detailPane.append(
+            el('div', 'notice', '라인 단위 diff를 찾을 수 없습니다 — 아래는 문서 발췌'),
+            el('div', 'excerpt-label', '✦ 문서 발췌'),
+            el('div', 'excerpt', detail.excerpt),
+          );
+        }
       } else {
         detailPane.append(el('div', 'excerpt-label', '✦ 문서 발췌'), el('div', 'excerpt', detail.excerpt));
       }
