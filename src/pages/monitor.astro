@@ -7,6 +7,7 @@ import { resolveCategory } from '@/data/categories';
 import { scanCheckboxes, scanGitLog } from '@/data/scan';
 import { scanDiff, type DiffLine } from '@/data/diff';
 import { buildDocIndex, fileToDocId, targetRepoRoot } from '@/data/paths';
+import { scanWatchedFiles } from '@/data/watch-files';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -25,9 +26,10 @@ type Detail = {
   excerpt: string;
   plan?: PlanItem[];
   diff?: DiffLine[];
+  kind?: 'config';
 };
 type TimelineItem = { id?: string; name: string; dir: string; status: Status; ago: string; preview: string | null; rel: string; mtime: number };
-type TreeNode = { depth: number; isDir: boolean; name: string; id?: string; status?: Status };
+type TreeNode = { depth: number; isDir: boolean; name: string; preview?: string; status?: Status; kind?: 'doc' | 'config' };
 
 function esc(value: string) {
   return value
@@ -99,20 +101,21 @@ function dirOf(rel: string) {
   return dir === '.' ? '' : `${dir}/`;
 }
 
-function buildTree(docs: Array<{ id: string; rel: string; name: string; status: Status }>): TreeNode[] {
-  type Node = { dirs: Map<string, Node>; files: Array<{ id: string; name: string; status: Status }> };
+function buildTree(items: Array<{ preview: string; rel: string; name: string; status: Status; kind: 'doc' | 'config' }>): TreeNode[] {
+  type Leaf = { preview: string; name: string; status: Status; kind: 'doc' | 'config' };
+  type Node = { dirs: Map<string, Node>; files: Leaf[] };
   const root: Node = { dirs: new Map(), files: [] };
 
-  for (const doc of docs) {
-    const parts = doc.rel.split('/');
-    const file = parts.pop() ?? doc.name;
+  for (const item of items) {
+    const parts = item.rel.split('/');
+    const file = parts.pop() ?? item.name;
     let node = root;
     for (const part of parts) {
       const next = node.dirs.get(part) ?? { dirs: new Map(), files: [] };
       node.dirs.set(part, next);
       node = next;
     }
-    node.files.push({ id: doc.id, name: file, status: doc.status });
+    node.files.push({ preview: item.preview, name: file, status: item.status, kind: item.kind });
   }
 
   const out: TreeNode[] = [];
@@ -122,7 +125,7 @@ function buildTree(docs: Array<{ id: string; rel: string; name: string; status: 
       walk(child, depth + 1);
     });
     node.files.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
-      out.push({ depth, isDir: false, name: file.name, id: file.id, status: file.status });
+      out.push({ depth, isDir: false, name: file.name, preview: file.preview, status: file.status, kind: file.kind });
     });
   };
   walk(root, 0);
@@ -176,6 +179,30 @@ const docSources = await Promise.all(docs.map(async entry => {
   details[entry.id] = detail;
   return { id: entry.id, rel, name, dir, status, mtime: stat?.mtimeMs ?? 0, category: resolveCategory(rel, DEFAULT_CONFIG.categories) };
 }));
+
+const watched = await scanWatchedFiles(root, DEFAULT_CONFIG);
+const watchedDetails = await Promise.all(watched.map(async w => {
+  const [content, stat] = await Promise.all([
+    fs.readFile(w.abs, 'utf8').catch(() => ''),
+    fs.stat(w.abs).catch(() => null),
+  ]);
+  const status = dirtyByRel.get(w.rel) ?? 'DOC';
+  const diff = status === 'MOD' ? await scanDiff(root, w.rel) : [];
+  const detail: Detail = {
+    name: path.posix.basename(w.rel),
+    dir: dirOf(w.rel),
+    path: w.rel,
+    status,
+    size: stat ? humanSize(stat.size) : '0 B',
+    created: stat ? stamp(stat.mtimeMs) : '—',
+    lines: content ? String(content.replace(/\r\n/g, '\n').split('\n').length) : '0',
+    excerpt: '',
+    kind: 'config',
+    ...(diff.length ? { diff } : {}),
+  };
+  return { rel: w.rel, name: detail.name, status, preview: `/rawpreview/${w.rel}`, detail };
+}));
+const watchedByRel = new Map(watchedDetails.map(w => [w.rel, w]));
 
 const timelineByRel = new Map<string, TimelineItem>();
 for (const item of activity.recentlyModified) {
@@ -233,7 +260,12 @@ if (!timeline.length && commits[0]) {
   }
 }
 
-const tree = buildTree(docSources);
+for (const t of timeline) { if (!t.preview) t.preview = watchedByRel.get(t.rel)?.preview ?? null; }
+
+const tree = buildTree([
+  ...docSources.map(d => ({ preview: `/preview/${d.id}`, rel: d.rel, name: d.name, status: d.status, kind: 'doc' as const })),
+  ...watchedDetails.map(w => ({ preview: w.preview, rel: w.rel, name: w.name, status: w.status, kind: 'config' as const })),
+]);
 
 const checklists = docSources
   .filter(doc => details[doc.id]?.plan?.length)
@@ -244,6 +276,10 @@ const checklists = docSources
   .sort((a, b) => (a.dir + a.name).localeCompare(b.dir + b.name));
 const checklistTotal = checklists.reduce((n, c) => n + c.total, 0);
 const checklistDone = checklists.reduce((n, c) => n + c.done, 0);
+
+const clientDetails: Record<string, Detail> = {};
+for (const [id, d] of Object.entries(details)) clientDetails[`/preview/${id}`] = d;
+for (const w of watchedDetails) clientDetails[w.preview] = w.detail;
 
 const docsTotal = docs.length;
 void esc;
@@ -280,8 +316,8 @@ void esc;
           <span class="tree-name">{node.name}</span>
         </div>
       ) : (
-        <div class={`tree-row file ${(node.status ?? 'DOC').toLowerCase()}`} style={`--depth:${node.depth}`} data-preview={`/preview/${node.id}`} role="button" tabindex="0">
-          <span class="tree-icon"></span>
+        <div class={`tree-row file ${(node.status ?? 'DOC').toLowerCase()}`} style={`--depth:${node.depth}`} data-preview={node.preview} role="button" tabindex="0">
+          <span class="tree-icon">{node.kind === 'config' ? '⚙' : ''}</span>
           <span class="tree-name">{node.name}</span>
           <span class="status-badge">{node.status}</span>
         </div>
@@ -321,7 +357,7 @@ void esc;
     <div id="col3-empty" class="empty-state">문서를 선택하면 여기에 전체 내용이 표시됩니다.</div>
   </section>
 
-  <script id="dw-details" type="application/json" set:html={JSON.stringify(details).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('&', '\\u0026')}></script>
+  <script id="dw-details" type="application/json" set:html={JSON.stringify(clientDetails).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('&', '\\u0026')}></script>
 
   <style is:global>
     .monitor-col { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--md-sys-color-surface-container-low); }
@@ -427,8 +463,8 @@ void esc;
       return node;
     }
 
-    function fillDetail(id) {
-      const detail = details[id];
+    function fillDetail(url) {
+      const detail = details[url];
       if (!detail || !detailPane) return;
       detailPane.replaceChildren();
 
@@ -438,69 +474,57 @@ void esc;
       head.append(title, el('div', 'detail-sub', detail.dir || detail.path));
       detailPane.append(head);
 
-      if (detail.status === 'NEW') {
+      if (detail.status === 'NEW' || detail.kind === 'config') {
         const metas = el('div', 'meta-grid');
         [['크기', detail.size], ['생성일', detail.created], ['라인', detail.lines]].forEach(([label, value]) => {
           const chip = el('div', 'meta-chip');
           chip.append(el('span', '', label), el('b', '', value));
           metas.append(chip);
         });
-        detailPane.append(metas, el('div', 'excerpt-label', '✦ 문서 발췌'), el('div', 'excerpt', detail.excerpt));
-      } else if (detail.status === 'MOD') {
-        if (detail.diff && detail.diff.length) {
-          const adds = detail.diff.filter(line => line.t === 'add').length;
-          const dels = detail.diff.filter(line => line.t === 'del').length;
-          const stat = el('div', 'diff-stat');
-          stat.append(el('span', 'diff-add-count', `+${adds} 추가`), el('span', 'diff-del-count', `−${dels} 삭제`));
-          const box = el('div', 'diff-box');
-          detail.diff.forEach((line, i) => {
-            const row = el('div', `diff-line ${line.t}`);
-            row.append(
-              el('span', 'diff-gutter', String(i + 1)),
-              el('span', 'diff-sign', line.t === 'add' ? '+' : line.t === 'del' ? '−' : ' '),
-              el('span', 'diff-text', line.s),
-            );
-            box.append(row);
-          });
-          detailPane.append(stat, box);
-        } else {
-          detailPane.append(
-            el('div', 'notice', '라인 단위 diff를 찾을 수 없습니다 — 아래는 문서 발췌'),
-            el('div', 'excerpt-label', '✦ 문서 발췌'),
-            el('div', 'excerpt', detail.excerpt),
+        detailPane.append(metas);
+      }
+
+      if (detail.status === 'MOD' && detail.diff && detail.diff.length) {
+        const adds = detail.diff.filter(line => line.t === 'add').length;
+        const dels = detail.diff.filter(line => line.t === 'del').length;
+        const stat = el('div', 'diff-stat');
+        stat.append(el('span', 'diff-add-count', `+${adds} 추가`), el('span', 'diff-del-count', `−${dels} 삭제`));
+        const box = el('div', 'diff-box');
+        detail.diff.forEach((line, i) => {
+          const row = el('div', `diff-line ${line.t}`);
+          row.append(
+            el('span', 'diff-gutter', String(i + 1)),
+            el('span', 'diff-sign', line.t === 'add' ? '+' : line.t === 'del' ? '−' : ' '),
+            el('span', 'diff-text', line.s),
           );
-        }
-      } else {
+          box.append(row);
+        });
+        detailPane.append(stat, box);
+      } else if (detail.excerpt) {
         detailPane.append(el('div', 'excerpt-label', '✦ 문서 발췌'), el('div', 'excerpt', detail.excerpt));
+      } else if (detail.kind === 'config') {
+        detailPane.append(el('div', 'notice', '⚙ 설정·매니페스트 파일 — 오른쪽에서 전체 내용을 확인하세요'));
       }
     }
 
-    function openPreview(id) {
-      if (!(frame instanceof HTMLIFrameElement) || !col3Empty) return;
-      frame.src = `/preview/${id}`;
-      frame.hidden = false;
-      col3Empty.hidden = true;
-    }
-
-    function select(id, target) {
-      if (!id || !details[id]) return;
+    function select(url, target) {
+      if (!url || !details[url]) return;
+      if (!(url.startsWith('/preview/') || url.startsWith('/rawpreview/'))) return;
       document.querySelectorAll('[data-preview].sel').forEach(node => node.classList.remove('sel'));
       if (target instanceof HTMLElement) target.classList.add('sel');
-      fillDetail(id);
-      openPreview(id);
-      history.replaceState(null, '', '?doc=' + encodeURIComponent(`/preview/${id}`));
-    }
-
-    function idFromPreview(url) {
-      return url?.startsWith('/preview/') ? url.slice('/preview/'.length) : '';
+      fillDetail(url);
+      if (frame instanceof HTMLIFrameElement && col3Empty) {
+        frame.src = url;
+        frame.hidden = false;
+        col3Empty.hidden = true;
+      }
+      history.replaceState(null, '', '?doc=' + encodeURIComponent(url));
     }
 
     function openTarget(target) {
       if (!(target instanceof HTMLElement)) return;
       const url = target.dataset.preview;
-      const id = idFromPreview(url);
-      if (!id) return;
-      select(id, target);
+      if (url) select(url, target);
     }
 
     document.addEventListener('click', event => {
@@ -554,10 +578,10 @@ void esc;
 
       (data.recentlyModified || []).forEach(item => {
         const detailEntry = Object.entries(details).find(([, detail]) => detail.path === item.path);
-        const id = detailEntry?.[0];
+        const url = detailEntry?.[0];
         const detail = detailEntry?.[1];
         byRel.set(item.path, {
-          preview: id ? `/preview/${id}` : null,
+          preview: url ?? null,
           name: detail?.name || item.path.split('/').pop() || item.path,
           dir: detail?.dir || relDir(item.path),
           status: detail?.status || 'DOC',
@@ -572,11 +596,11 @@ void esc;
         if (status === 'NEW') nextNew++;
         else nextMod++;
         const detailEntry = Object.entries(details).find(([, detail]) => detail.path === item.path);
-        const id = detailEntry?.[0];
+        const url = detailEntry?.[0];
         const detail = detailEntry?.[1];
         const existing = byRel.get(item.path);
         byRel.set(item.path, {
-          preview: id ? `/preview/${id}` : null,
+          preview: url ?? null,
           name: detail?.name || item.path.split('/').pop() || item.path,
           dir: detail?.dir || relDir(item.path),
           status,
@@ -625,10 +649,7 @@ void esc;
       if (doc) {
         const match = document.querySelector(`[data-preview="${CSS.escape(doc)}"]`);
         if (match instanceof HTMLElement) openTarget(match);
-        else if (doc.startsWith('/preview/')) {
-          const id = idFromPreview(doc);
-          if (details[id]) select(id, null);
-        }
+        else if (details[doc]) select(doc, null);
       }
       setLivePolling(document.getElementById('app')?.hasAttribute('data-live'));
     });
