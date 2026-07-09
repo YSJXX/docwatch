@@ -97,3 +97,24 @@ test('code TODO section lists comment markers from source files', async ({ page 
   // the "TODO not a real marker" string literal must be excluded
   expect(await todoList.locator('.todo-item', { hasText: 'not a real marker' }).count()).toBe(0);
 });
+
+test('a mermaid diagram file opens as a rendered diagram', async ({ page }) => {
+  await page.goto('/monitor');
+
+  await page.locator('.tree-row.file[data-preview="/rawpreview/docs/flow.mmd"]').click();
+
+  await expect(page.locator('#doc-frame')).toHaveAttribute('src', /\/rawpreview\/docs\/flow\.mmd/);
+  // mermaid renders client-side into .mermaid-rendered svg; the raw code block is the fallback
+  await expect(
+    page.frameLocator('#doc-frame').locator('.mermaid-rendered svg, code.language-mermaid').first(),
+  ).toBeVisible();
+});
+
+test('a spec file (openapi.yaml) opens as highlighted code', async ({ page }) => {
+  await page.goto('/monitor');
+
+  await page.locator('.tree-row.file[data-preview="/rawpreview/docs/openapi.yaml"]').click();
+
+  await expect(page.locator('#doc-frame')).toHaveAttribute('src', /openapi\.yaml/);
+  await expect(page.frameLocator('#doc-frame').locator('pre').first()).toBeVisible();
+});
