@@ -13,16 +13,27 @@ test('monitor loads', async ({ page }) => {
   await expect(page.locator('#col3-empty')).toBeVisible();
 });
 
-test('selecting a plan doc shows the plan tracker', async ({ page }) => {
+test('selecting a doc with checkboxes still shows the full document', async ({ page }) => {
   await page.goto('/monitor');
 
   await page.locator(`.tree-row.file[data-preview="${planPreview}"]`).click();
 
-  await expect(page.locator('#plan-pane')).toBeVisible();
-  expect(await page.locator('#plan-pane .plan-row').count()).toBeGreaterThanOrEqual(1);
+  // The preview always renders the whole document — never a tracker in its place.
+  await expect(page.locator('#doc-frame')).toHaveAttribute('src', new RegExp(planPreview));
+  await expect(page.locator('#doc-frame')).toBeVisible();
   await expect(page.locator('#col3-empty')).not.toBeVisible();
-  await expect(page.locator('#doc-frame')).not.toBeVisible();
   await expect(page.locator('#detail-pane .detail-name')).toBeVisible();
+});
+
+test('project checklist section lists items and opens the source doc', async ({ page }) => {
+  await page.goto('/monitor');
+
+  await expect(page.locator('#checklist-list .cl-item').first()).toBeVisible();
+
+  await page.locator(`.cl-doc[data-preview="${planPreview}"]`).first().click();
+
+  await expect(page.locator('#doc-frame')).toHaveAttribute('src', new RegExp(planPreview));
+  await expect(page.locator('#doc-frame')).toBeVisible();
 });
 
 test('selecting a non-plan doc shows the iframe preview', async ({ page }) => {

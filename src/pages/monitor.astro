@@ -234,6 +234,17 @@ if (!timeline.length && commits[0]) {
 }
 
 const tree = buildTree(docSources);
+
+const checklists = docSources
+  .filter(doc => details[doc.id]?.plan?.length)
+  .map(doc => {
+    const items = details[doc.id].plan ?? [];
+    return { id: doc.id, name: doc.name, dir: doc.dir, items, done: items.filter(i => i.done).length, total: items.length };
+  })
+  .sort((a, b) => (a.dir + a.name).localeCompare(b.dir + b.name));
+const checklistTotal = checklists.reduce((n, c) => n + c.total, 0);
+const checklistDone = checklists.reduce((n, c) => n + c.done, 0);
+
 const docsTotal = docs.length;
 void esc;
 ---
@@ -276,6 +287,27 @@ void esc;
         </div>
       ))}
     </div>
+
+    <div class="section-head cl-head">
+      <div><span>☑</span><b>프로젝트 체크리스트</b></div>
+      <span class="count">{checklistDone}/{checklistTotal}</span>
+    </div>
+    <div class="checklist-list" id="checklist-list">
+      {checklists.length ? checklists.map(cl => (
+        <div class="cl-group">
+          <div class="cl-doc" data-preview={`/preview/${cl.id}`} role="button" tabindex="0" title={cl.dir + cl.name}>
+            <span class="cl-doc-name">{cl.name}</span>
+            <span class="cl-doc-count">{cl.done}/{cl.total}</span>
+          </div>
+          {cl.items.map(item => (
+            <div class={`cl-item ${item.done ? 'done' : ''}`}>
+              <span class="cl-box">{item.done ? '✓' : ''}</span>
+              <span class="cl-text">{item.text}</span>
+            </div>
+          ))}
+        </div>
+      )) : <div class="empty-state compact">체크리스트가 없습니다.</div>}
+    </div>
   </section>
 
   <section class="monitor-col col-two">
@@ -286,8 +318,7 @@ void esc;
 
   <section class="monitor-col col-three">
     <iframe id="doc-frame" title="document preview" hidden></iframe>
-    <div id="plan-pane" hidden></div>
-    <div id="col3-empty" class="empty-state">문서 미리보기 또는 계획 추적기가 여기에 표시됩니다.</div>
+    <div id="col3-empty" class="empty-state">문서를 선택하면 여기에 전체 내용이 표시됩니다.</div>
   </section>
 
   <script id="dw-details" type="application/json" set:html={JSON.stringify(details).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('&', '\\u0026')}></script>
@@ -302,8 +333,8 @@ void esc;
     .section-head b { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--md-sys-color-on-surface); }
     .section-head .count { font-family: var(--md-sys-typescale-mono-font); font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
     .tree-head { border-top: 1px solid var(--md-sys-color-outline-variant); }
-    .timeline-list { flex: 1 1 55%; min-height: 0; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; }
-    .tree-list { flex: 1 1 45%; min-height: 0; overflow-y: auto; padding: 6px 8px; }
+    .timeline-list { flex: 1 1 30%; min-height: 90px; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .tree-list { flex: 1 1 30%; min-height: 90px; overflow-y: auto; padding: 6px 8px; }
     .timeline-row { padding: 5px 9px; border-radius: 5px; border: 1px solid transparent; background: transparent; transition: background .15s, border-color .15s; }
     .timeline-row.fresh { animation: dashSlideIn .55s ease; }
     .row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -355,25 +386,17 @@ void esc;
     .empty-state[hidden] { display: none; }
     #doc-frame { width: 100%; height: 100%; border: 0; background: #fff; }
     #doc-frame[hidden] { display: none; }
-    #plan-pane { height: 100%; overflow-y: auto; padding: 20px 24px; animation: dashFade .3s ease; }
-    .plan-wrap { max-width: 760px; margin: 0 auto; }
-    .plan-kicker { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--md-sys-color-primary); margin-bottom: 8px; }
-    .plan-title { font-size: 22px; font-weight: 700; color: var(--md-sys-color-on-surface); margin-bottom: 16px; }
-    .plan-progress { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-    .plan-track { flex: 1; height: 9px; border-radius: 999px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
-    .plan-bar { height: 100%; background: var(--md-sys-color-primary); border-radius: 999px; transition: width .4s ease; }
-    .plan-label { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface); }
-    .plan-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
-    .plan-tab { cursor: pointer; border: 1px solid var(--md-sys-color-outline-variant); font-family: var(--md-sys-typescale-plain-font); font-size: 12.5px; font-weight: 500; padding: 6px 13px; border-radius: 999px; transition: all .15s; background: transparent; color: var(--md-sys-color-on-surface-variant); }
-    .plan-tab.active { background: var(--md-sys-color-secondary-container); border-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
-    .plan-items { display: flex; flex-direction: column; gap: 8px; }
-    .plan-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; background: var(--md-sys-color-surface-container); }
-    .plan-box { flex: none; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: transparent; border: 2px solid var(--md-sys-color-outline); color: transparent; }
-    .plan-row.done .plan-box { background: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
-    .plan-text { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; color: var(--md-sys-color-on-surface); }
-    .plan-row.done .plan-text { color: var(--md-sys-color-on-surface-variant); }
-    .plan-tag { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 9.5px; font-weight: 500; letter-spacing: .4px; padding: 2px 7px; border-radius: 5px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
-    .plan-row.done .plan-tag { background: var(--dw-green-bg); color: var(--dw-green); }
+    .cl-head { border-top: 1px solid var(--md-sys-color-outline-variant); }
+    .checklist-list { flex: 1 1 40%; min-height: 90px; overflow-y: auto; padding: 6px 8px; }
+    .cl-group { margin-bottom: 10px; }
+    .cl-doc { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; min-width: 0; }
+    .cl-doc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--md-sys-typescale-mono-font); font-size: 11.5px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+    .cl-doc-count { flex: none; font-family: var(--md-sys-typescale-mono-font); font-size: 10px; color: var(--md-sys-color-on-surface-variant); }
+    .cl-item { display: flex; align-items: flex-start; gap: 7px; padding: 2px 8px 2px 18px; font-size: 11.5px; line-height: 1.45; }
+    .cl-box { flex: none; width: 13px; height: 13px; margin-top: 1px; border-radius: 3px; border: 1.5px solid var(--md-sys-color-outline); display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: transparent; }
+    .cl-item.done .cl-box { background: var(--dw-green-dot); border-color: var(--dw-green-dot); color: #fff; }
+    .cl-text { flex: 1; min-width: 0; color: var(--md-sys-color-on-surface); word-break: break-word; }
+    .cl-item.done .cl-text { color: var(--md-sys-color-on-surface-variant); text-decoration: line-through; }
     @media (max-width: 900px) {
       .monitor-col { min-height: 70vh; border-right: 0; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
       .col-one, .col-two, .col-three { flex: none; }
@@ -385,7 +408,6 @@ void esc;
     const details = detailsEl?.textContent ? JSON.parse(detailsEl.textContent) : {};
     const detailPane = document.getElementById('detail-pane');
     const frame = document.getElementById('doc-frame');
-    const planPane = document.getElementById('plan-pane');
     const col3Empty = document.getElementById('col3-empty');
     const timelineList = document.getElementById('timeline-list');
     const timelineCount = document.getElementById('timeline-count');
@@ -453,68 +475,10 @@ void esc;
       }
     }
 
-    function renderPlan(id) {
-      const detail = details[id];
-      if (!detail?.plan || !planPane || !(frame instanceof HTMLIFrameElement) || !col3Empty) return false;
-      const state = detail.plan.map(item => ({ ...item }));
-      let filter = 'all';
-
-      function draw() {
-        const done = state.filter(item => item.done).length;
-        const total = state.length || 1;
-        const pct = Math.round((done / total) * 100);
-        const visible = state.filter(item => filter === 'all' || (filter === 'done' ? item.done : !item.done));
-        const wrap = el('div', 'plan-wrap');
-        wrap.append(el('div', 'plan-kicker', '☑ 계획 추적'), el('div', 'plan-title', detail.name));
-
-        const progress = el('div', 'plan-progress');
-        const track = el('div', 'plan-track');
-        const bar = el('div', 'plan-bar');
-        bar.style.width = `${pct}%`;
-        track.append(bar);
-        progress.append(track, el('span', 'plan-label', `${done} / ${state.length} 완료 · ${pct}%`));
-        wrap.append(progress);
-
-        const tabs = el('div', 'plan-tabs');
-        [
-          ['all', `전체 ${state.length}`],
-          ['done', `완료 ${done}`],
-          ['todo', `예정 ${state.length - done}`],
-        ].forEach(([key, label]) => {
-          const tab = el('button', `plan-tab ${filter === key ? 'active' : ''}`, label);
-          tab.type = 'button';
-          tab.addEventListener('click', () => { filter = key; draw(); });
-          tabs.append(tab);
-        });
-        wrap.append(tabs);
-
-        const rows = el('div', 'plan-items');
-        visible.forEach(item => {
-          const row = el('div', `plan-row ${item.done ? 'done' : ''}`);
-          const box = el('span', 'plan-box', item.done ? '✓' : '');
-          row.append(box, el('span', 'plan-text', item.text), el('span', 'plan-tag', item.done ? '완료' : '예정'));
-          rows.append(row);
-        });
-        if (!visible.length) rows.append(el('div', 'empty-state compact', '해당 상태의 계획이 없습니다.'));
-        wrap.append(rows);
-        planPane.replaceChildren(wrap);
-      }
-
-      draw();
-      planPane.hidden = false;
-      frame.hidden = true;
-      col3Empty.hidden = true;
-      return true;
-    }
-
     function openPreview(id) {
-      if (renderPlan(id)) return;
-      if (!(frame instanceof HTMLIFrameElement) || !planPane || !col3Empty) return;
-      const url = `/preview/${id}`;
-      if (!url.startsWith('/preview/')) return;
-      frame.src = url;
+      if (!(frame instanceof HTMLIFrameElement) || !col3Empty) return;
+      frame.src = `/preview/${id}`;
       frame.hidden = false;
-      planPane.hidden = true;
       col3Empty.hidden = true;
     }
 
