@@ -19,4 +19,13 @@ pagefind: "true"
 - [ ] survive
 EOF
 printf '{\n  "name": "sample-repo",\n  "version": "0.0.0",\n  "private": true\n}\n' > package.json  # dirty NEW watched config file
-echo "# uncommitted" > NOTES.md   # dirty로 남김
+mkdir -p src
+cat > src/app.ts <<'TS'
+// TODO: implement the thing
+export function run() {
+  // FIXME: handle errors
+  return 42; // HACK: magic number
+}
+const label = "TODO not a real marker";
+TS
+echo "# uncommitted" > NOTES.md   # dirty로 남김 (src/app.ts도 dirty로 남겨 TODO 스캔 대상)

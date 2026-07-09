@@ -85,3 +85,15 @@ test('rawpreview path traversal via ?doc is ignored', async ({ page }) => {
   const frameSrc = await page.locator('#doc-frame').getAttribute('src');
   expect(frameSrc ?? '').not.toContain('etc/passwd');
 });
+
+test('code TODO section lists comment markers from source files', async ({ page }) => {
+  await page.goto('/monitor');
+
+  const todoList = page.locator('#todo-list');
+  await expect(todoList.locator('.todo-file', { hasText: 'src/app.ts' })).toBeVisible();
+  await expect(todoList.locator('.todo-tag.todo').first()).toBeVisible();
+  await expect(todoList.locator('.todo-tag.fixme').first()).toBeVisible();
+  await expect(todoList.locator('.todo-tag.hack').first()).toBeVisible();
+  // the "TODO not a real marker" string literal must be excluded
+  expect(await todoList.locator('.todo-item', { hasText: 'not a real marker' }).count()).toBe(0);
+});
