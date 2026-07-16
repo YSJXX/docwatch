@@ -30,7 +30,7 @@ type Detail = {
   kind?: 'config';
 };
 type TimelineItem = { id?: string; name: string; dir: string; status: Status; ago: string; preview: string | null; rel: string; mtime: number };
-type TreeNode = { depth: number; isDir: boolean; name: string; preview?: string; status?: Status; kind?: 'doc' | 'config' };
+type TreeNode = { depth: number; isDir: boolean; name: string; preview?: string; status?: Status; kind?: 'doc' | 'config'; dirPath?: string; parentPath?: string };
 
 function esc(value: string) {
   return value
@@ -120,16 +120,17 @@ function buildTree(items: Array<{ preview: string; rel: string; name: string; st
   }
 
   const out: TreeNode[] = [];
-  const walk = (node: Node, depth: number) => {
+  const walk = (node: Node, depth: number, prefix: string) => {
     [...node.dirs.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([name, child]) => {
-      out.push({ depth, isDir: true, name });
-      walk(child, depth + 1);
+      const full = prefix ? `${prefix}/${name}` : name;
+      out.push({ depth, isDir: true, name, dirPath: full, parentPath: prefix });
+      walk(child, depth + 1, full);
     });
     node.files.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
-      out.push({ depth, isDir: false, name: file.name, preview: file.preview, status: file.status, kind: file.kind });
+      out.push({ depth, isDir: false, name: file.name, preview: file.preview, status: file.status, kind: file.kind, parentPath: prefix });
     });
   };
-  walk(root, 0);
+  walk(root, 0, '');
   return out;
 }
 
@@ -321,12 +322,12 @@ void esc;
     </div>
     <div class="tree-list" id="tree-list">
       {tree.map(node => node.isDir ? (
-        <div class="tree-row dir" style={`--depth:${node.depth}`}>
-          <span class="tree-icon">▸</span>
+        <div class="tree-row dir" style={`--depth:${node.depth}`} data-dir={node.dirPath} data-parent={node.parentPath ?? ''} role="button" tabindex="0" aria-expanded="true">
+          <span class="tree-icon tree-caret">▾</span>
           <span class="tree-name">{node.name}</span>
         </div>
       ) : (
-        <div class={`tree-row file ${(node.status ?? 'DOC').toLowerCase()}`} style={`--depth:${node.depth}`} data-preview={node.preview} role="button" tabindex="0">
+        <div class={`tree-row file ${(node.status ?? 'DOC').toLowerCase()}`} style={`--depth:${node.depth}`} data-preview={node.preview} data-parent={node.parentPath ?? ''} role="button" tabindex="0">
           <span class="tree-icon">{node.kind === 'config' ? '⚙' : ''}</span>
           <span class="tree-name">{node.name}</span>
           <span class="status-badge">{node.status}</span>
@@ -355,10 +356,11 @@ void esc;
       )) : <div class="empty-state compact">체크리스트가 없습니다.</div>}
     </div>
 
-    <div class="section-head todo-head">
+    <div class="section-head todo-head" title="소스코드 주석의 TODO·FIXME·HACK·XXX 마커 집계 (읽기 전용)">
       <div><span>🔧</span><b>코드 TODO</b></div>
       <span class="count">{todoTotal}</span>
     </div>
+    <div class="section-hint">소스코드 주석의 TODO·FIXME·HACK·XXX 모음 · 읽기 전용</div>
     <div class="todo-list" id="todo-list">
       {todoGroups.length ? todoGroups.map(g => (
         <div class="todo-group">
@@ -375,11 +377,15 @@ void esc;
     </div>
   </section>
 
+  <div class="col-resizer" data-resize role="separator" aria-orientation="vertical" tabindex="0" title="드래그하여 좌우 너비 조절"></div>
+
   <section class="monitor-col col-two">
     <div id="detail-pane">
       <div class="empty-state">타임라인·트리에서 파일을 선택하세요</div>
     </div>
   </section>
+
+  <div class="col-resizer" data-resize role="separator" aria-orientation="vertical" tabindex="0" title="드래그하여 좌우 너비 조절"></div>
 
   <section class="monitor-col col-three">
     <iframe id="doc-frame" title="document preview" hidden></iframe>
@@ -413,7 +419,15 @@ void esc;
     .row-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 3px; font-size: 10px; color: var(--md-sys-color-on-surface-variant); min-width: 0; }
     .row-meta span:first-child { font-family: var(--md-sys-typescale-mono-font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tree-row { display: flex; align-items: center; gap: 7px; padding: 3px 8px; padding-left: calc(8px + var(--depth) * 15px); border-radius: 6px; min-width: 0; transition: background .12s; }
-    .tree-row.dir { cursor: default; }
+    .tree-row.dir { cursor: pointer; }
+    .tree-row.dir:hover { background: var(--md-sys-color-surface-container-high); }
+    .tree-caret { display: inline-block; transition: transform .12s; }
+    .tree-row[hidden] { display: none; }
+    .col-resizer { flex: none; align-self: stretch; width: 7px; cursor: col-resize; background: transparent; position: relative; z-index: 3; }
+    .col-resizer::before { content: ''; position: absolute; inset: 0 3px; border-radius: 2px; background: var(--md-sys-color-primary); opacity: 0; transition: opacity .15s; }
+    .col-resizer:hover::before, .col-resizer.dragging::before { opacity: .55; }
+    body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-select: none !important; }
+    .section-hint { flex: none; padding: 5px 12px 3px; font-size: 10px; line-height: 1.3; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-outline-variant); }
     .tree-row.file { cursor: pointer; }
     .tree-icon { flex: none; width: 10px; font-size: 10px; color: var(--md-sys-color-on-surface-variant); }
     .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--md-sys-typescale-mono-font); font-size: 12px; }
@@ -476,6 +490,7 @@ void esc;
     @media (max-width: 900px) {
       .monitor-col { min-height: 70vh; border-right: 0; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
       .col-one, .col-two, .col-three { flex: none; }
+      .col-resizer { display: none; }
     }
   </style>
 
@@ -680,6 +695,92 @@ void esc;
     document.addEventListener('dw:live-toggle', event => {
       setLivePolling(Boolean(event.detail?.live));
     });
+
+    // --- resizable columns ---
+    const RESIZE_STORE = 'dw-col-basis';
+    function loadBasis() { try { return JSON.parse(localStorage.getItem(RESIZE_STORE) || '{}'); } catch { return {}; } }
+    function saveBasis(obj) { try { localStorage.setItem(RESIZE_STORE, JSON.stringify(obj)); } catch {} }
+    (function initResizers() {
+      const colOne = document.querySelector('.col-one');
+      const colTwo = document.querySelector('.col-two');
+      const basis = loadBasis();
+      if (colOne instanceof HTMLElement && basis.one) { colOne.style.flexBasis = basis.one + 'px'; colOne.style.flexGrow = '0'; colOne.style.flexShrink = '0'; }
+      if (colTwo instanceof HTMLElement && basis.two) { colTwo.style.flexBasis = basis.two + 'px'; colTwo.style.flexGrow = '0'; colTwo.style.flexShrink = '0'; }
+      document.querySelectorAll('.col-resizer').forEach(rz => {
+        rz.addEventListener('pointerdown', event => {
+          const col = rz.previousElementSibling;
+          if (!(col instanceof HTMLElement) || !(event instanceof PointerEvent)) return;
+          event.preventDefault();
+          const startX = event.clientX;
+          const startW = col.getBoundingClientRect().width;
+          rz.classList.add('dragging');
+          document.body.classList.add('col-resizing');
+          try { rz.setPointerCapture(event.pointerId); } catch {}
+          const onMove = ev => {
+            let w = startW + (ev.clientX - startX);
+            w = Math.max(160, Math.min(w, window.innerWidth - 320));
+            col.style.flexBasis = w + 'px';
+            col.style.flexGrow = '0';
+            col.style.flexShrink = '0';
+          };
+          const onUp = () => {
+            rz.classList.remove('dragging');
+            document.body.classList.remove('col-resizing');
+            rz.removeEventListener('pointermove', onMove);
+            rz.removeEventListener('pointerup', onUp);
+            const store = loadBasis();
+            const width = Math.round(col.getBoundingClientRect().width);
+            if (col.classList.contains('col-one')) store.one = width;
+            else if (col.classList.contains('col-two')) store.two = width;
+            saveBasis(store);
+          };
+          rz.addEventListener('pointermove', onMove);
+          rz.addEventListener('pointerup', onUp);
+        });
+      });
+    })();
+
+    // --- collapsible file tree ---
+    const treeList = document.getElementById('tree-list');
+    const TREE_STORE = 'dw-tree-collapsed';
+    let collapsedDirs = new Set();
+    try { collapsedDirs = new Set(JSON.parse(localStorage.getItem(TREE_STORE) || '[]')); } catch {}
+    function saveCollapsed() { try { localStorage.setItem(TREE_STORE, JSON.stringify([...collapsedDirs])); } catch {} }
+    function applyTreeCollapse() {
+      if (!treeList) return;
+      const hiddenParents = new Set();
+      treeList.querySelectorAll('.tree-row').forEach(row => {
+        if (!(row instanceof HTMLElement)) return;
+        const parent = row.dataset.parent || '';
+        const hidden = !!parent && (collapsedDirs.has(parent) || hiddenParents.has(parent));
+        row.hidden = hidden;
+        const dir = row.dataset.dir;
+        if (dir) {
+          const isCollapsed = collapsedDirs.has(dir);
+          row.setAttribute('aria-expanded', String(!isCollapsed));
+          const caret = row.querySelector('.tree-caret');
+          if (caret) caret.textContent = isCollapsed ? '▸' : '▾';
+          if (hidden || isCollapsed) hiddenParents.add(dir);
+        }
+      });
+    }
+    treeList?.addEventListener('click', event => {
+      const dirRow = event.target instanceof Element ? event.target.closest('.tree-row.dir') : null;
+      if (!(dirRow instanceof HTMLElement) || !dirRow.dataset.dir) return;
+      const dir = dirRow.dataset.dir;
+      if (collapsedDirs.has(dir)) collapsedDirs.delete(dir);
+      else collapsedDirs.add(dir);
+      saveCollapsed();
+      applyTreeCollapse();
+    });
+    treeList?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const dirRow = event.target instanceof Element ? event.target.closest('.tree-row.dir') : null;
+      if (!dirRow) return;
+      event.preventDefault();
+      dirRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    applyTreeCollapse();
 
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('[data-preview]').forEach(node => {
