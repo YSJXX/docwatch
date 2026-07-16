@@ -44,3 +44,8 @@ tests/fixtures/sample-repo/
 
 # OMC orchestration state (session/plan/notepad runtime data)
 .omc/
+
+# docwatch serve script runtime state
+.docwatch-serve.pid
+.docwatch-serve.target
+.docwatch-serve.log

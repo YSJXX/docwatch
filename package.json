@@ -40,6 +40,7 @@
   ],
   "scripts": {
     "dev": "astro dev",
+    "serve": "bash scripts/serve.sh",
     "build": "astro build",
     "preview": "astro preview",
     "test": "vitest",
